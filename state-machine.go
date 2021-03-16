@@ -1,6 +1,11 @@
 package main
 
-import "os/exec"
+import (
+	"fmt"
+	"github.com/meschbach/minecraft-overseer/game"
+	"os"
+	"path"
+)
 
 const (
 	Stop = 0
@@ -12,11 +17,7 @@ type StateMachine struct {
 	output chan string
 	fsm chan int
 	quit chan int
-	instance RunningInstance
-}
-
-type RunningInstance struct {
-
+	game *game.Game
 }
 
 func newStateMachine( output chan string ) *StateMachine {
@@ -53,26 +54,37 @@ func (s *StateMachine) startMinecraft() {
 		s.output <- "[overseer] Starting"
 		s.running = true
 
-		mc := exec.Command("java","-jar", "papermc.jar")
-		if err := mc.Start(); err != nil {
-			s.output <- "[overseer] Failed to start process"
+		pwd, err := os.Getwd()
+		if err != nil {
+			s.running = false
+			s.output <- "[overseer] Failed to get current working directory"
 			s.output <- err.Error()
+			return
 		}
 
-		go func() {
-			err := mc.Wait()
-			s.output <- "[overseer] Minecraft exited"
-			if err != nil {
-				s.output <- "[overseer] Error reported while exiting -- " + err.Error()
-			}
-		}()
+		s.game = game.NewInstance(path.Join(pwd,"w"))
+		s.game.Start()
+		go s.pumpMessages()
+		s.output <- "[overseer] Waiting for instance to start..."
 	}
 }
 
+func (s *StateMachine) pumpMessages() {
+	for {
+		msg, ok := <- s.game.ServiceMessage
+		if !ok {
+			break
+		}
+		formatted := fmt.Sprintf("[instance] %s",msg)
+		s.output <- formatted
+	}
+	s.output <- "[instance] channel consumed, exiting."
+}
 
 func (s *StateMachine) stopMinecraft() {
 	if s.running {
 		s.output <- "[overseer] Stopping"
+		s.game.Stop()
 		s.running = false
 	} else {
 		s.output <- "[overseer] Not running"
