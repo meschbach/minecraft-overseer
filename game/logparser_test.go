@@ -48,6 +48,16 @@ func TestUserJoined(t *testing.T)  {
 	}
 }
 
+func TestUserJoinedWithNewline(t *testing.T)  {
+	input := "[15:03:18] [Server thread/INFO]: drakgremlin joined the game\n"
+	rawEntry := parseLogEntry(input)
+	entry := rawEntry.(*UserJoinedEntry)
+	if entry.User != "drakgremlin" {
+		t.Fatalf("Expected user to be 'drakgremlin', got '%s'", entry.User)
+	}
+}
+
+
 func TestUserLeft(t *testing.T)  {
 	input := "[15:03:38] [Server thread/INFO]: drakgremlin left the game"
 	rawEntry := parseLogEntry(input)

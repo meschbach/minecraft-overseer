@@ -56,7 +56,14 @@ func (s *UserLeftEvent) AsString() string {
 	return fmt.Sprintf("User left %s", s.User)
 }
 
-func parseLogEntry(entry string) LogEntry {
+func parseLogEntry(rawEntry string) LogEntry {
+	var entry string
+	if rawEntry[len(rawEntry)-1:] == "\n" {
+		entry = rawEntry[:len(rawEntry)-1]
+	} else {
+		entry = rawEntry
+	}
+
 	firstSpace := strings.Index(entry, " ")
 	if firstSpace == -1 {
 		return &UnknownLogEntry{Line: entry}
