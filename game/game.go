@@ -20,7 +20,7 @@ type gameState int
  * however this did not perform a number of functions to match what is needed here.
  */
 type Game struct {
-	ServiceMessage chan string
+	ServiceMessage chan LogEntry
 	reactor chan gameCommand
 }
 
@@ -38,7 +38,7 @@ func NewInstance(baseDirectory string) *Game {
 	command := exec.Command("java","-jar", "minecraft_server.jar", "nogui")
 	command.Dir = baseDirectory
 	i := &Game{
-		ServiceMessage: make(chan string),
+		ServiceMessage: make(chan LogEntry),
 		reactor: make(chan gameCommand),
 	}
 	go i.runState(command)

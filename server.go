@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	wui "github.com/meschbach/minecraft-overseer/wui"
 )
 
 var (
@@ -25,7 +26,7 @@ func main() {
 	hub := newHub()
 	go hub.run()
 
-	http.HandleFunc("/", serveHome)
+	http.HandleFunc("/", wui.ServeWUI)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(hub, w, r)
 	})

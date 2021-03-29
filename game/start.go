@@ -21,14 +21,14 @@ func (*startCommand) run(state *internalState, game *Game) error {
 		return err
 	}
 	serverOutput := bufio.NewReader(out)
-	go game.pumpStream(serverOutput)
+	go game.pumpStream(serverOutput, &parsedTranslator{})
 
 	stderrRaw, err := state.serviceProcess.StderrPipe()
 	if err != nil {
 		return err
 	}
 	stderrReader := bufio.NewReader(stderrRaw)
-	go game.pumpStream(stderrReader)
+	go game.pumpStream(stderrReader, &passthroughTranslator{})
 
 	stdinRaw, err := state.serviceProcess.StdinPipe()
 	if err != nil { return err }
@@ -43,7 +43,11 @@ func (*startCommand) run(state *internalState, game *Game) error {
 	return nil
 }
 
-func (i *Game) pumpStream(serverOutput *bufio.Reader)  {
+type streamTranslator interface {
+	translate(input string) LogEntry
+}
+
+func (i *Game) pumpStream(serverOutput *bufio.Reader, translator streamTranslator)  {
 	for {
 		line, err := serverOutput.ReadString('\n')
 		if err == io.EOF {
@@ -54,7 +58,7 @@ func (i *Game) pumpStream(serverOutput *bufio.Reader)  {
 			//TODO: Shut things down gracefully
 			panic(err)
 		} else {
-			i.ServiceMessage <- line
+			i.ServiceMessage <- translator.translate(line)
 		}
 	}
 }
@@ -64,9 +68,9 @@ func (i *Game) postCleanup(proc *exec.Cmd) {
 	if err != nil {
 		if errorCode, ok := err.(*exec.ExitError); ok {
 			serviceMessage := fmt.Sprintf("Exit code of %d", errorCode.ExitCode())
-			i.ServiceMessage <- serviceMessage
+			i.ServiceMessage <- &UnknownLogEntry{Line: serviceMessage}
 		} else {
-			i.ServiceMessage <- err.Error()
+			i.ServiceMessage <- &UnknownLogEntry{Line: err.Error()}
 		}
 	}
 }
@@ -74,7 +78,7 @@ func (i *Game) postCleanup(proc *exec.Cmd) {
 func (i *internalState) pumpCommands(out *bufio.Writer, game *Game) {
 	for {
 		cmd := <- i.commands
-		game.ServiceMessage <- fmt.Sprintf("[command] '%s'", cmd)
+		game.ServiceMessage <- &UnknownLogEntry{Line: fmt.Sprintf("[command] '%s'", cmd)}
 		output := fmt.Sprintf("%s\n", cmd)
 		count, err := out.WriteString(output)
 		if err != nil {
