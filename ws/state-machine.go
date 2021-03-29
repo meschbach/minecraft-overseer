@@ -75,7 +75,7 @@ func (s *StateMachine) pumpMessages() {
 		if !ok {
 			break
 		}
-		formatted := fmt.Sprintf("[instance] %s",msg)
+		formatted := fmt.Sprintf("[instance] %s",msg.AsString())
 		s.output <- formatted
 	}
 	s.output <- "[instance] channel consumed, exiting."
