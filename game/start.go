@@ -28,7 +28,7 @@ func (*startCommand) run(state *internalState, game *Game) error {
 		return err
 	}
 	stderrReader := bufio.NewReader(stderrRaw)
-	go game.pumpStream(stderrReader, &passthroughTranslator{})
+	go game.pumpStream(stderrReader, &passthroughTranslator{ prefix: "stderr -- "})
 
 	stdinRaw, err := state.serviceProcess.StdinPipe()
 	if err != nil { return err }

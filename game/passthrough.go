@@ -1,9 +1,9 @@
 package game
 
 type passthroughTranslator struct {
-
+	prefix string
 }
 
-func (*passthroughTranslator) translate(input string) LogEntry {
-	return &UnknownLogEntry{Line: input}
+func (p *passthroughTranslator) translate(input string) LogEntry {
+	return &UnknownLogEntry{Line: p.prefix + input}
 }
