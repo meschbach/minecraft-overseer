@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	wui "github.com/meschbach/minecraft-overseer/wui"
+	ws "github.com/meschbach/minecraft-overseer/ws"
 )
 
 var (
@@ -23,12 +24,12 @@ func main() {
 	if len(flag.Args()) < 1 {
 		log.Fatal("usage: minecraft-oversee <http-address>")
 	}
-	hub := newHub()
-	go hub.run()
+	hub := ws.NewHub()
+	go hub.Run()
 
 	http.HandleFunc("/", wui.ServeWUI)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
+		ws.ProcessClient(hub, w, r)
 	})
 	//TODO: Binds to 8080 no matter what
 	log.Fatal(http.ListenAndServe(*addr, nil))

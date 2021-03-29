@@ -1,4 +1,4 @@
-package main
+package ws
 
 import (
 	"github.com/gorilla/websocket"
@@ -117,7 +117,7 @@ func (c *Spoke) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ProcessClient(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	socket, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

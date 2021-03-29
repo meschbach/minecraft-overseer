@@ -1,4 +1,4 @@
-package main
+package ws
 
 type Hub struct {
 	ingest chan Message
@@ -9,7 +9,7 @@ type Hub struct {
 	broadcast chan string
 }
 
-func newHub() *Hub  {
+func NewHub() *Hub  {
 	broadcast := make(chan string)
 	return &Hub{
 		ingest:  make(chan Message),
@@ -21,7 +21,7 @@ func newHub() *Hub  {
 	}
 }
 
-func (h *Hub) run() {
+func (h *Hub) Run() {
 	go h.overseer.run()
 	for {
 		select {
