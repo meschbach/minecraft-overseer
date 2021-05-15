@@ -34,12 +34,12 @@ func NewDiscordClient(ctx context.Context, token string) (*DiscordOutput, error)
 				}
 				fmt.Printf("\t\tChannel %q\n", c.Name)
 
-				if c.Name == "minecraft-talk-and-chat" {
-					s.ChannelMessageSend(
-						c.ID,
-						fmt.Sprintf("This is a test.  This is only a test.  Otherwise this would be giving info about the minecrat server."),
-					)
-				}
+				//if c.Name == "minecraft-talk-and-chat" {
+				//	s.ChannelMessageSend(
+				//		c.ID,
+				//		fmt.Sprintf("This is a test.  This is only a test.  Otherwise this would be giving info about the minecrat server."),
+				//	)
+				//}
 			}
 		}
 	})
