@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func main()  {
+func main() {
 	root := cmd.NewOverseerCLI()
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

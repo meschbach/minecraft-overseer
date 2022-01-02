@@ -29,31 +29,37 @@ func RunServer(initCtx context.Context, opts *serverOpts) error {
 	}
 
 	go hub.Run()
+	//Automated initialization and start
+	go func() {
+		start := &ws.StartMessage{}
+		hub.InternalSend(start)
+	}()
 
 	http.HandleFunc("/", wui.ServeWUI)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.ProcessClient(hub, w, r)
 	})
-	return http.ListenAndServe(opts.httpAddress,nil)
+	fmt.Printf("Starting webserver at %q\n", opts.httpAddress)
+	return http.ListenAndServe(opts.httpAddress, nil)
 }
 
 type serverOpts struct {
-	httpAddress string
+	httpAddress  string
 	discordToken string
 }
 
-func newServerCommands() *cobra.Command  {
+func newServerCommands() *cobra.Command {
 	opts := &serverOpts{}
-	run := &cobra.Command {
-		Use: "run",
-		Short:  "Begins the Overseer service",
+	run := &cobra.Command{
+		Use:   "server",
+		Short: "Begins the Overseer service",
 		//PreRunE: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			startup := cmd.Context()
 			return RunServer(startup, opts)
 		},
 	}
-	run.PersistentFlags().StringVar(&opts.httpAddress, "http-bind","127.0.0.1:8080","Port to bind webhost too" )
-	run.PersistentFlags().StringVar(&opts.discordToken, "discord-token","","Enables connecting to Discord" )
+	run.PersistentFlags().StringVar(&opts.httpAddress, "http-bind", "127.0.0.1:8080", "Port to bind webhost too")
+	run.PersistentFlags().StringVar(&opts.discordToken, "discord-token", "", "Enables connecting to Discord")
 	return run
 }

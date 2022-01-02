@@ -1,23 +1,23 @@
 package ws
 
 type Hub struct {
-	ingest chan Message
-	register chan *Spoke
+	ingest     chan Message
+	register   chan *Spoke
 	unregister chan *Spoke
-	clients map[*Spoke]bool
-	overseer *StateMachine
-	broadcast chan string
+	clients    map[*Spoke]bool
+	overseer   *StateMachine
+	broadcast  chan string
 }
 
-func NewHub() *Hub  {
+func NewHub() *Hub {
 	broadcast := make(chan string)
 	return &Hub{
-		ingest:  make(chan Message),
+		ingest:     make(chan Message),
 		register:   make(chan *Spoke),
 		unregister: make(chan *Spoke),
 		clients:    make(map[*Spoke]bool),
-		broadcast: broadcast,
-		overseer: newStateMachine(broadcast),
+		broadcast:  broadcast,
+		overseer:   newStateMachine(broadcast),
 	}
 }
 
@@ -48,4 +48,9 @@ func (h *Hub) Run() {
 			}
 		}
 	}
+}
+
+//TODO This is a bit messy
+func (h *Hub) InternalSend(msg Message) OutputMessage {
+	return msg.apply(h)
 }

@@ -14,14 +14,16 @@ type DiscordOutput struct {
 }
 
 func NewDiscordClient(ctx context.Context, token string) (*DiscordOutput, error) {
-	client, err := discordgo.New("Bot "+ token)
-	if err != nil { return nil, err }
+	client, err := discordgo.New("Bot " + token)
+	if err != nil {
+		return nil, err
+	}
 
 	subsystem := &DiscordOutput{
 		client: client,
-		ready: false,
+		ready:  false,
 	}
-	client.AddHandler(func (s *discordgo.Session, event *discordgo.Ready)  {
+	client.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
 		fmt.Println("Discord client ready")
 		subsystem.ready = true
 		for _, guild := range s.State.Guilds {

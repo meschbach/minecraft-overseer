@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/fs"
 	"os/exec"
 )
 
@@ -28,10 +29,12 @@ func (*startCommand) run(state *internalState, game *Game) error {
 		return err
 	}
 	stderrReader := bufio.NewReader(stderrRaw)
-	go game.pumpStream(stderrReader, &passthroughTranslator{ prefix: "stderr -- "})
+	go game.pumpStream(stderrReader, &passthroughTranslator{prefix: "stderr -- "})
 
 	stdinRaw, err := state.serviceProcess.StdinPipe()
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	stdin := bufio.NewWriter(stdinRaw)
 	go state.pumpCommands(stdin, game)
 
@@ -47,7 +50,7 @@ type streamTranslator interface {
 	translate(input string) LogEntry
 }
 
-func (i *Game) pumpStream(serverOutput *bufio.Reader, translator streamTranslator)  {
+func (i *Game) pumpStream(serverOutput *bufio.Reader, translator streamTranslator) {
 	for {
 		line, err := serverOutput.ReadString('\n')
 		if err == io.EOF {
@@ -55,8 +58,12 @@ func (i *Game) pumpStream(serverOutput *bufio.Reader, translator streamTranslato
 			return
 			//close(i.ServiceMessage)
 		} else if err != nil {
-			//TODO: Shut things down gracefully
-			panic(err)
+			if pathError, ok := err.(*fs.PathError); ok {
+				fmt.Printf("Failed to start pump because: %s\n", pathError.Error())
+				break
+			} else {
+				panic(err)
+			}
 		} else {
 			i.ServiceMessage <- translator.translate(line)
 		}
@@ -77,7 +84,7 @@ func (i *Game) postCleanup(proc *exec.Cmd) {
 
 func (i *internalState) pumpCommands(out *bufio.Writer, game *Game) {
 	for {
-		cmd := <- i.commands
+		cmd := <-i.commands
 		game.ServiceMessage <- &UnknownLogEntry{Line: fmt.Sprintf("[command] '%s'", cmd)}
 		output := fmt.Sprintf("%s\n", cmd)
 		count, err := out.WriteString(output)

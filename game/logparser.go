@@ -75,23 +75,22 @@ func parseLogEntry(rawEntry string) LogEntry {
 	}
 
 	message := afterDate[colonIndex+2:]
-	if strings.HasPrefix(message,"Starting minecraft server version ") {
+	if strings.HasPrefix(message, "Starting minecraft server version ") {
 		return &StartingEntry{
 			message[len("Starting minecraft server version "):],
 		}
 	}
-	if strings.HasPrefix(message,"Done (") && strings.HasSuffix(message,"! For help, type \"help\" or \"?\"") {
+	if strings.HasPrefix(message, "Done (") && strings.HasSuffix(message, "! For help, type \"help\" or \"?\"") {
 		prefix := "Done ("
 		afterPrefix := message[len(prefix):]
-		timingEndIndex := strings.Index(afterPrefix,")!")
+		timingEndIndex := strings.Index(afterPrefix, ")!")
 		time := afterPrefix[:timingEndIndex]
-		return &StartedEntry {
+		return &StartedEntry{
 			TimeTaken: time,
 		}
 	}
 	if message == "Stopping the server" {
-		return &StoppingEntry {
-		}
+		return &StoppingEntry{}
 	}
 	if strings.HasSuffix(message, " joined the game") {
 		endUserName := strings.Index(message, " ")

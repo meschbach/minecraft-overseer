@@ -8,8 +8,8 @@ import (
 )
 
 type Spoke struct {
-	hub *Hub
-	socket *websocket.Conn
+	hub     *Hub
+	socket  *websocket.Conn
 	message chan OutputMessage
 }
 
