@@ -10,10 +10,6 @@ import (
 	"os"
 )
 
-type Manifest struct {
-	V1 ManifestV1 `json:"v1"`
-}
-
 type ManifestV1 struct {
 	Repository string
 	Plugins    []string

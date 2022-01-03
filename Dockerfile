@@ -7,4 +7,5 @@ RUN ./overseer --help
 
 FROM openjdk
 COPY --from=builder /app/overseer /overseer
+COPY log4j.xml /log4j.xml
 CMD ["/overseer", "server"]
