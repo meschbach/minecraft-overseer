@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/magiconair/properties"
+	"github.com/meschbach/go-junk-bucket/sub"
+	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"path"
-	"sync"
-
-	"github.com/meschbach/go-junk-bucket/sub"
-	"github.com/spf13/cobra"
 )
 
 func internalError(ws *websocket.Conn, msg string, err error) {
@@ -22,9 +20,10 @@ func internalError(ws *websocket.Conn, msg string, err error) {
 }
 
 type ManifestV2 struct {
-	Type      string
-	Version   string
-	ServerURL string `json:"server-url"`
+	Type       string
+	Version    string
+	ServerURL  string   `json:"server-url"`
+	DefaultOps []string `json:"default-operators"`
 }
 
 type Manifest struct {
@@ -55,54 +54,40 @@ func withoutFile(baseDir string, file string, perform func(fileName string) erro
 }
 
 func pipeCommandOutput(prefix string, program string, args ...string) error {
-	var pumpsDone sync.WaitGroup
-
-	toClose := make([]chan string, 0)
-	defer func() {
-		for _, pipe := range toClose {
-			close(pipe)
-		}
-		pumpsDone.Wait()
-	}()
-	buildPump := func(name string) chan string {
-		pipe := make(chan string, 8)
-		toClose = append(toClose, pipe)
-		pumpsDone.Add(1)
-		go sub.PumpPrefixedChannel(name, pipe, &pumpsDone)
-		return pipe
-	}
-
-	stdoutPrefix := fmt.Sprintf("<<%s.stdout>>", prefix)
-	stderrPrefix := fmt.Sprintf("<<%s.stderr>>", prefix)
-	stdout := buildPump(stdoutPrefix)
-	stderr := buildPump(stderrPrefix)
 	initCmd := sub.NewSubcommand(program, args)
-	return initCmd.Run(stdout, stderr)
+	return initCmd.PumpToStandard(prefix)
 }
 
-func initV2(ctx context.Context, configFile string, gameDir string) error {
+type runtimeConfig struct {
+	operators []string
+}
+
+func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConfig, error) {
 	fmt.Println("II    Ensuring initialized.")
 	//Load && Parse Manifest file
 	var manifest Manifest
+	var config runtimeConfig
 	if err := LoadJSONFile(configFile, &manifest); err != nil {
-		return err
+		return config, err
 	}
 	if manifest.V1 != nil {
-		return errors.New("v1 is no longer supported")
+		return config, errors.New("v1 is no longer supported")
 	}
 	if manifest.V2 == nil {
-		return errors.New("v2 must be provided")
+		return config, errors.New("v2 must be provided")
 	}
+
+	config.operators = manifest.V2.DefaultOps
 
 	switch manifest.V2.Type {
 	case "vanilla":
 	default:
-		return errors.New("only vanilla supported right now")
+		return config, errors.New("only vanilla supported right now")
 	}
 
 	// change to the game directory
 	if err := os.Chdir(gameDir); err != nil {
-		return err
+		return config, err
 	}
 
 	//Ensure game file is downloaded
@@ -110,45 +95,92 @@ func initV2(ctx context.Context, configFile string, gameDir string) error {
 		fmt.Println("Server JAR does not exist.  Downloading.")
 		return downloadFile(ctx, manifest.V2.ServerURL, fileName)
 	}); err != nil {
-		return err
+		return config, err
 	}
 
 	//Has the configuration been seeded?
 	if err := withoutFile(gameDir, "server.properties", func(fileName string) error {
-		return pipeCommandOutput("config-default", "java", "-Dlog4j.configurationFile=/log4j.xml", "-jar", "minecraft_server.jar", "--initSettings", "--nogui")
+		err := pipeCommandOutput("config-default", "java", "-Dlog4j.configurationFile=/log4j.xml", "-jar", "minecraft_server.jar", "--initSettings", "--nogui")
+		if err != nil {
+			return err
+		}
+
+		//Set server config defaults
+		serverProperties, err := properties.LoadFile("server.properties", properties.UTF8)
+		if err != nil {
+			return err
+		}
+		serverProperties.SetValue("sync-chunk-writes", "false")
+		serverProperties.SetValue("motd", "Minecraft Overseer provisioned world")
+		serverProperties.SetValue("white-list", "true")
+		serverProperties.SetValue("spawn-protection", "1")
+		if err := os.WriteFile("server.properties", []byte(serverProperties.String()), 0700); err != nil {
+			return err
+		}
+		return nil
 	}); err != nil {
-		return err
+		return config, err
 	}
 
 	//Override the eula
 	eulaProps, err := properties.LoadFile("eula.txt", properties.UTF8)
 	if err != nil {
-		return err
+		return config, err
 	}
 	eulaValue, hasEula := eulaProps.Get("eula")
 	if !hasEula || eulaValue != "true" {
 		_, ok, err := eulaProps.Set("eula", "true")
 		if err != nil {
-			return err
+			return config, err
 		}
 		if !ok {
 			panic("unable to set key")
 		}
 
 		renderedEula := eulaProps.String()
-		if err := os.WriteFile("eula.txt", []byte(renderedEula), 0777); err != nil {
-			return err
+		if err := os.WriteFile("eula.txt", []byte(renderedEula), 0700); err != nil {
+			return config, err
 		}
 	}
 
-	return nil
+	return config, nil
 }
 
-func RunServer(initCtx context.Context, opts *serverOpts) error {
-	if err := initV2(initCtx, opts.fs.configFile, opts.fs.gameDir); err != nil {
+func RunProgram(initCtx context.Context, opts *serverOpts) error {
+	runtimeConfig, err := initV2(initCtx, opts.fs.configFile, opts.fs.gameDir)
+	if err != nil {
 		return err
 	}
-	err := pipeCommandOutput("game", "java", "-Dlog4j.configurationFile=/log4j.xml", "-jar", "minecraft_server.jar", "--nogui")
+	fmt.Printf("Passed configuration: %v\n", runtimeConfig)
+
+	stdout := make(chan string, 16)
+	stderr := make(chan string, 16)
+	cmd := sub.NewSubcommand("java", []string{
+		"-Dlog4j2.formatMsgNoLookups=true", "-Dlog4j.configurationFile=/log4j.xml",
+		"-jar", "minecraft_server.jar",
+		"--nogui"})
+	go func() {
+		fmt.Println("<<stderr initialized>>")
+		for msg := range stderr {
+			fmt.Fprintf(os.Stderr, "<<stderr>> %s\n", msg)
+		}
+	}()
+	go func() {
+		fmt.Println("<<stdout initialized>>")
+		for msg := range stdout {
+			fmt.Printf("<<stdout>> %s\n", msg)
+		}
+	}()
+
+	stdin := make(chan string, 16)
+	go func() {
+		for _, operator := range runtimeConfig.operators {
+			stdin <- fmt.Sprintf("whitelist add %s", operator)
+			stdin <- fmt.Sprintf("op %s", operator)
+		}
+	}()
+
+	err = cmd.Interact(stdin, stdout, stderr)
 	if err != nil {
 		return err
 	}
@@ -172,7 +204,7 @@ func newServerCommands() *cobra.Command {
 		//PreRunE: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			startup := cmd.Context()
-			return RunServer(startup, opts)
+			return RunProgram(startup, opts)
 		},
 	}
 	run.PersistentFlags().StringVar(&opts.httpAddress, "http-bind", "127.0.0.1:8080", "Port to bind webhost too")
