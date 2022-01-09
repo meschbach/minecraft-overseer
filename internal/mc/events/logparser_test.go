@@ -7,8 +7,8 @@ import (
 func TestLoadingMessageIgnored(t *testing.T) {
 	input := "[22:33:46] [Server thread/INFO]: Default game type: SURVIVAL"
 	entry := ParseLogEntry(input)
-	if entry.AsString() != "Default game type: SURVIVAL" {
-		t.Fatalf("Parser failed to extract random message, got '%s'", entry.AsString())
+	if entry.String() != "Default game type: SURVIVAL" {
+		t.Fatalf("Parser failed to extract random message, got '%s'", entry.String())
 	}
 }
 

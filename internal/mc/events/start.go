@@ -6,7 +6,7 @@ type StartingEntry struct {
 	Version string
 }
 
-func (s *StartingEntry) AsString() string {
+func (s *StartingEntry) String() string {
 	return fmt.Sprintf("Starting %s", s.Version)
 }
 
@@ -14,6 +14,6 @@ type StartedEntry struct {
 	TimeTaken string
 }
 
-func (s *StartedEntry) AsString() string {
+func (s *StartedEntry) String() string {
 	return fmt.Sprintf("Started")
 }

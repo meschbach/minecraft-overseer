@@ -5,6 +5,6 @@ import "fmt"
 type StoppingEntry struct {
 }
 
-func (s *StoppingEntry) AsString() string {
+func (s *StoppingEntry) String() string {
 	return fmt.Sprintf("Stopping server")
 }

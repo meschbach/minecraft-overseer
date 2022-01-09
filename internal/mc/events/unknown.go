@@ -4,6 +4,6 @@ type UnknownLogEntry struct {
 	Line string
 }
 
-func (u *UnknownLogEntry) AsString() string {
+func (u *UnknownLogEntry) String() string {
 	return u.Line
 }
