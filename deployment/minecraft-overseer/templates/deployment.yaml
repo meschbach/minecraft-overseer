@@ -69,5 +69,6 @@ spec:
           configMap:
             name: {{ include "minecraft-overseer.fullname" . }}
         - name: instance
-          emptyDir:
-            medium: "Memory"
+          {{- with .Values.instanceStorage }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
