@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/magiconair/properties"
 	"github.com/meschbach/go-junk-bucket/sub"
+	"github.com/meschbach/minecraft-overseer/internal/config"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -17,18 +18,6 @@ import (
 func internalError(ws *websocket.Conn, msg string, err error) {
 	log.Println(msg, err)
 	ws.WriteMessage(websocket.TextMessage, []byte("Internal server error."))
-}
-
-type ManifestV2 struct {
-	Type       string
-	Version    string
-	ServerURL  string   `json:"server-url"`
-	DefaultOps []string `json:"default-operators"`
-}
-
-type Manifest struct {
-	V1 *ManifestV1 `json:"v1,omitempty"`
-	V2 *ManifestV2 `json:"v2,omitempty"`
 }
 
 func LoadJSONFile(fileName string, out interface{}) error {
@@ -65,7 +54,7 @@ type runtimeConfig struct {
 func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConfig, error) {
 	fmt.Println("II    Ensuring initialized.")
 	//Load && Parse Manifest file
-	var manifest Manifest
+	var manifest config.Manifest
 	var config runtimeConfig
 	if err := LoadJSONFile(configFile, &manifest); err != nil {
 		return config, err

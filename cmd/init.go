@@ -4,19 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/meschbach/minecraft-overseer/internal/config"
 	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
 )
 
-type ManifestV1 struct {
-	Repository string
-	Plugins    []string
-	Forge      string
-}
-
-func parseManifest(ctx context.Context, manifest *Manifest, fileName string) error {
+func parseManifest(ctx context.Context, manifest *config.Manifest, fileName string) error {
 	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		return err
@@ -55,7 +50,7 @@ func newInitCommands() *cobra.Command {
 			manifestFile := args[0]
 			ctx := cmd.Context()
 
-			manifest := &Manifest{}
+			manifest := &config.Manifest{}
 			if err := parseManifest(ctx, manifest, manifestFile); err != nil {
 				return err
 			}
