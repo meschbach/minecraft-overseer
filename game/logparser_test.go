@@ -30,6 +30,15 @@ func TestConsumeStartedMessage(t *testing.T) {
 	}
 }
 
+func TestConsumeStartedMessage171(t *testing.T) {
+	input := "[05:43:55] [Server thread/INFO]: Done (7.682s)! For help, type \"help\""
+	rawEntry := ParseLogEntry(input)
+	entry := rawEntry.(*StartedEntry)
+	if entry.TimeTaken != "7.682s" {
+		t.Fatalf("Expected time taken to be '7.682s', got '%s'", entry.TimeTaken)
+	}
+}
+
 func TestStoppingMessage(t *testing.T) {
 	input := "[14:58:12] [Server thread/INFO]: Stopping the server"
 	rawEntry := ParseLogEntry(input)

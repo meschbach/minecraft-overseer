@@ -81,7 +81,7 @@ func ParseLogEntry(rawEntry string) LogEntry {
 			message[len("Starting minecraft server version "):],
 		}
 	}
-	if strings.HasPrefix(message, "Done (") && strings.HasSuffix(message, "! For help, type \"help\" or \"?\"") {
+	if strings.HasPrefix(message, "Done (") {
 		prefix := "Done ("
 		afterPrefix := message[len(prefix):]
 		timingEndIndex := strings.Index(afterPrefix, ")!")
