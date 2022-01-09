@@ -86,6 +86,16 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 			stdin <- fmt.Sprintf("whitelist add %s", operator)
 			stdin <- fmt.Sprintf("op %s", operator)
 		}
+
+		for entry := range gameChannel {
+			switch e := entry.(type) {
+			case *events.UserJoinedEntry:
+				fmt.Printf("User %q joined", e.User)
+			case *events.UserLeftEvent:
+				fmt.Printf("User %q left", e.User)
+			default:
+			}
+		}
 	}()
 
 	err = cmd.Interact(stdin, stdoutChannel, stderr)
