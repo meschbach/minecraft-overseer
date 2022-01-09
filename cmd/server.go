@@ -4,20 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"github.com/magiconair/properties"
 	"github.com/meschbach/go-junk-bucket/sub"
 	"github.com/meschbach/minecraft-overseer/internal/config"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 	"path"
 )
-
-func internalError(ws *websocket.Conn, msg string, err error) {
-	log.Println(msg, err)
-	ws.WriteMessage(websocket.TextMessage, []byte("Internal server error."))
-}
 
 func withoutFile(baseDir string, file string, perform func(fileName string) error) error {
 	serverFile := path.Join(baseDir, file)
