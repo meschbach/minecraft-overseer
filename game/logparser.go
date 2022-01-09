@@ -6,6 +6,7 @@ import (
 )
 
 type LogEntry interface {
+	//TODO: rename to String so it is comptable with Golang
 	AsString() string
 }
 
@@ -56,7 +57,7 @@ func (s *UserLeftEvent) AsString() string {
 	return fmt.Sprintf("User left %s", s.User)
 }
 
-func parseLogEntry(rawEntry string) LogEntry {
+func ParseLogEntry(rawEntry string) LogEntry {
 	var entry string
 	if rawEntry[len(rawEntry)-1:] == "\n" {
 		entry = rawEntry[:len(rawEntry)-1]

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/meschbach/go-junk-bucket/sub"
+	"github.com/meschbach/minecraft-overseer/game"
+	"github.com/meschbach/minecraft-overseer/internal/junk"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -29,7 +31,13 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 	}
 	fmt.Printf("Passed configuration: %v\n", runtimeConfig)
 
-	stdout := make(chan string, 16)
+	stdoutChannel := make(chan string, 16)
+	echoStdoutChannel := make(chan string, 16)
+	gameEventsChannel := make(chan string, 16)
+	stdout := &junk.StringBroadcast{
+		Input: stdoutChannel,
+		Out:   []chan<- string{echoStdoutChannel, gameEventsChannel},
+	}
 	stderr := make(chan string, 16)
 	stdin := make(chan string, 16)
 	cmd := sub.NewSubcommand("java", []string{
@@ -42,9 +50,25 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 			fmt.Fprintf(os.Stderr, "<<stderr>> %s\n", msg)
 		}
 	}()
+
+	//standard output
+	go stdout.RunLoop()
+	go func() {
+		fmt.Println("<<stdout interpreter started>>")
+		for msg := range gameEventsChannel {
+			entry := game.ParseLogEntry(msg)
+			switch entry.(type) {
+			case *game.UnknownLogEntry:
+				//ignore for now, dumped on stdout anyway
+			default:
+				fmt.Printf("<<game>> %#v\n", entry)
+			}
+		}
+		fmt.Println("<<stdout interpreter done>>")
+	}()
 	go func() {
 		fmt.Println("<<stdout initialized>>")
-		for msg := range stdout {
+		for msg := range echoStdoutChannel {
 			fmt.Printf("<<stdout>> %s\n", msg)
 		}
 	}()
@@ -56,7 +80,7 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 		}
 	}()
 
-	err = cmd.Interact(stdin, stdout, stderr)
+	err = cmd.Interact(stdin, stdoutChannel, stderr)
 	if err != nil {
 		return err
 	}
