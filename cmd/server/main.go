@@ -33,10 +33,10 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 
 	stdoutChannel := make(chan string, 16)
 	echoStdoutChannel := make(chan string, 16)
-	gameEventsChannel := make(chan string, 16)
+	gameEventsInput := make(chan string, 16)
 	stdout := &junk.StringBroadcast{
 		Input: stdoutChannel,
-		Out:   []chan<- string{echoStdoutChannel, gameEventsChannel},
+		Out:   []chan<- string{echoStdoutChannel, gameEventsInput},
 	}
 	stderr := make(chan string, 16)
 	stdin := make(chan string, 16)
@@ -53,15 +53,17 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 
 	//standard output
 	go stdout.RunLoop()
+	gameChannel := make(chan events.LogEntry)
 	go func() {
 		fmt.Println("<<stdout interpreter started>>")
-		for msg := range gameEventsChannel {
+		for msg := range gameEventsInput {
 			entry := events.ParseLogEntry(msg)
 			switch entry.(type) {
 			case *events.UnknownLogEntry:
 				//ignore for now, dumped on stdout anyway
 			default:
 				fmt.Printf("<<game>> %#v\n", entry)
+				gameChannel <- entry
 			}
 		}
 		fmt.Println("<<stdout interpreter done>>")
@@ -74,6 +76,12 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 	}()
 
 	go func() {
+		for entry := range gameChannel {
+			if _, ok := entry.(*events.StartedEntry); ok {
+				break
+			}
+		}
+
 		for _, operator := range runtimeConfig.operators {
 			stdin <- fmt.Sprintf("whitelist add %s", operator)
 			stdin <- fmt.Sprintf("op %s", operator)
