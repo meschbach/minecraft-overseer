@@ -12,7 +12,6 @@ type ManifestV2 struct {
 	DefaultOps []string `json:"default-operators"`
 }
 
-
 type ManifestV1 struct {
 	Repository string
 	Plugins    []string
