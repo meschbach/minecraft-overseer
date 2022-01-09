@@ -3,6 +3,7 @@ package game
 import (
 	"bufio"
 	"fmt"
+	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 	"io"
 	"io/fs"
 	"os/exec"
@@ -47,7 +48,7 @@ func (*startCommand) run(state *internalState, game *Game) error {
 }
 
 type streamTranslator interface {
-	translate(input string) LogEntry
+	translate(input string) events.LogEntry
 }
 
 func (i *Game) pumpStream(serverOutput *bufio.Reader, translator streamTranslator) {
@@ -75,9 +76,9 @@ func (i *Game) postCleanup(proc *exec.Cmd) {
 	if err != nil {
 		if errorCode, ok := err.(*exec.ExitError); ok {
 			serviceMessage := fmt.Sprintf("Exit code of %d", errorCode.ExitCode())
-			i.ServiceMessage <- &UnknownLogEntry{Line: serviceMessage}
+			i.ServiceMessage <- &events.UnknownLogEntry{Line: serviceMessage}
 		} else {
-			i.ServiceMessage <- &UnknownLogEntry{Line: err.Error()}
+			i.ServiceMessage <- &events.UnknownLogEntry{Line: err.Error()}
 		}
 	}
 }
@@ -85,7 +86,7 @@ func (i *Game) postCleanup(proc *exec.Cmd) {
 func (i *internalState) pumpCommands(out *bufio.Writer, game *Game) {
 	for {
 		cmd := <-i.commands
-		game.ServiceMessage <- &UnknownLogEntry{Line: fmt.Sprintf("[command] '%s'", cmd)}
+		game.ServiceMessage <- &events.UnknownLogEntry{Line: fmt.Sprintf("[command] '%s'", cmd)}
 		output := fmt.Sprintf("%s\n", cmd)
 		count, err := out.WriteString(output)
 		if err != nil {

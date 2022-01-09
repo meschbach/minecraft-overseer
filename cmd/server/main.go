@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/meschbach/go-junk-bucket/sub"
-	"github.com/meschbach/minecraft-overseer/game"
 	"github.com/meschbach/minecraft-overseer/internal/junk"
+	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -56,9 +56,9 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 	go func() {
 		fmt.Println("<<stdout interpreter started>>")
 		for msg := range gameEventsChannel {
-			entry := game.ParseLogEntry(msg)
+			entry := events.ParseLogEntry(msg)
 			switch entry.(type) {
-			case *game.UnknownLogEntry:
+			case *events.UnknownLogEntry:
 				//ignore for now, dumped on stdout anyway
 			default:
 				fmt.Printf("<<game>> %#v\n", entry)

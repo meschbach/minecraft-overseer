@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 	"os/exec"
 )
 
@@ -19,7 +20,7 @@ type gameState int
 // This is originally a derative work of https://levelup.gitconnected.com/lets-build-a-minecraft-server-wrapper-in-go-122c087e0023
 // however this did not perform a number of functions to match what is needed here.
 type Game struct {
-	ServiceMessage chan LogEntry
+	ServiceMessage chan events.LogEntry
 	reactor        chan gameCommand
 }
 
@@ -37,7 +38,7 @@ func NewInstance(baseDirectory string) *Game {
 	command := exec.Command("java", "-jar", "minecraft_server.jar", "nogui")
 	command.Dir = baseDirectory
 	i := &Game{
-		ServiceMessage: make(chan LogEntry),
+		ServiceMessage: make(chan events.LogEntry),
 		reactor:        make(chan gameCommand),
 	}
 	go i.runState(command)

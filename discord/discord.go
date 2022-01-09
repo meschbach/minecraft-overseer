@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/meschbach/minecraft-overseer/game"
+	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 )
 
 type DiscordOutput struct {
@@ -51,6 +51,6 @@ func NewDiscordClient(ctx context.Context, token string) (*DiscordOutput, error)
 	return subsystem, nil
 }
 
-func (d *DiscordOutput) OnEvent(e game.LogEntry) {
+func (d *DiscordOutput) OnEvent(e events.LogEntry) {
 
 }

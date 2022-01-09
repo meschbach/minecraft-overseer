@@ -1,61 +1,6 @@
-package game
+package events
 
-import (
-	"fmt"
-	"strings"
-)
-
-type LogEntry interface {
-	//TODO: rename to String so it is comptable with Golang
-	AsString() string
-}
-
-type UnknownLogEntry struct {
-	Line string
-}
-
-func (u *UnknownLogEntry) AsString() string {
-	return u.Line
-}
-
-type StartingEntry struct {
-	Version string
-}
-
-func (s *StartingEntry) AsString() string {
-	return fmt.Sprintf("Starting %s", s.Version)
-}
-
-type StartedEntry struct {
-	TimeTaken string
-}
-
-func (s *StartedEntry) AsString() string {
-	return fmt.Sprintf("Started")
-}
-
-type StoppingEntry struct {
-}
-
-func (s *StoppingEntry) AsString() string {
-	return fmt.Sprintf("Stopping server")
-}
-
-type UserJoinedEntry struct {
-	User string
-}
-
-func (s *UserJoinedEntry) AsString() string {
-	return fmt.Sprintf("User joined %s", s.User)
-}
-
-type UserLeftEvent struct {
-	User string
-}
-
-func (s *UserLeftEvent) AsString() string {
-	return fmt.Sprintf("User left %s", s.User)
-}
+import "strings"
 
 func ParseLogEntry(rawEntry string) LogEntry {
 	var entry string
