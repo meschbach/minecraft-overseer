@@ -31,6 +31,7 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 
 	stdout := make(chan string, 16)
 	stderr := make(chan string, 16)
+	stdin := make(chan string, 16)
 	cmd := sub.NewSubcommand("java", []string{
 		"-Dlog4j2.formatMsgNoLookups=true", "-Dlog4j.configurationFile=/log4j.xml",
 		"-jar", "minecraft_server.jar",
@@ -48,7 +49,6 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 		}
 	}()
 
-	stdin := make(chan string, 16)
 	go func() {
 		for _, operator := range runtimeConfig.operators {
 			stdin <- fmt.Sprintf("whitelist add %s", operator)
