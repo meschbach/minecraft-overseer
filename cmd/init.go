@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/meschbach/minecraft-overseer/internal/config"
 	"github.com/spf13/cobra"
@@ -10,18 +9,6 @@ import (
 	"net/http"
 	"os"
 )
-
-func parseManifest(ctx context.Context, manifest *config.Manifest, fileName string) error {
-	bytes, err := os.ReadFile(fileName)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(bytes, manifest); err != nil {
-		return err
-	}
-	return nil
-}
 
 //TODO: Use context aware gets
 func downloadFile(ctx context.Context, fileURL string, to string) error {
@@ -51,7 +38,7 @@ func newInitCommands() *cobra.Command {
 			ctx := cmd.Context()
 
 			manifest := &config.Manifest{}
-			if err := parseManifest(ctx, manifest, manifestFile); err != nil {
+			if err := config.ParseManifest(manifest, manifestFile); err != nil {
 				return err
 			}
 

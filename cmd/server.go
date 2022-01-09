@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -18,15 +17,6 @@ import (
 func internalError(ws *websocket.Conn, msg string, err error) {
 	log.Println(msg, err)
 	ws.WriteMessage(websocket.TextMessage, []byte("Internal server error."))
-}
-
-func LoadJSONFile(fileName string, out interface{}) error {
-	bytes, err := os.ReadFile(fileName)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(bytes, out)
 }
 
 func withoutFile(baseDir string, file string, perform func(fileName string) error) error {
@@ -55,28 +45,28 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 	fmt.Println("II    Ensuring initialized.")
 	//Load && Parse Manifest file
 	var manifest config.Manifest
-	var config runtimeConfig
-	if err := LoadJSONFile(configFile, &manifest); err != nil {
-		return config, err
+	var configLater runtimeConfig
+	if err := config.ParseManifest(&manifest, configFile); err != nil {
+		return configLater, err
 	}
 	if manifest.V1 != nil {
-		return config, errors.New("v1 is no longer supported")
+		return configLater, errors.New("v1 is no longer supported")
 	}
 	if manifest.V2 == nil {
-		return config, errors.New("v2 must be provided")
+		return configLater, errors.New("v2 must be provided")
 	}
 
-	config.operators = manifest.V2.DefaultOps
+	configLater.operators = manifest.V2.DefaultOps
 
 	switch manifest.V2.Type {
 	case "vanilla":
 	default:
-		return config, errors.New("only vanilla supported right now")
+		return configLater, errors.New("only vanilla supported right now")
 	}
 
 	// change to the game directory
 	if err := os.Chdir(gameDir); err != nil {
-		return config, err
+		return configLater, err
 	}
 
 	//Ensure game file is downloaded
@@ -84,17 +74,17 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 		fmt.Println("Server JAR does not exist.  Downloading.")
 		return downloadFile(ctx, manifest.V2.ServerURL, fileName)
 	}); err != nil {
-		return config, err
+		return configLater, err
 	}
 
 	//Has the configuration been seeded?
 	if err := withoutFile(gameDir, "server.properties", func(fileName string) error {
-		err := pipeCommandOutput("config-default", "java", "-Dlog4j.configurationFile=/log4j.xml", "-jar", "minecraft_server.jar", "--initSettings", "--nogui")
+		err := pipeCommandOutput("configLater-default", "java", "-Dlog4j.configurationFile=/log4j.xml", "-jar", "minecraft_server.jar", "--initSettings", "--nogui")
 		if err != nil {
 			return err
 		}
 
-		//Set server config defaults
+		//Set server configLater defaults
 		serverProperties, err := properties.LoadFile("server.properties", properties.UTF8)
 		if err != nil {
 			return err
@@ -108,19 +98,19 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 		}
 		return nil
 	}); err != nil {
-		return config, err
+		return configLater, err
 	}
 
 	//Override the eula
 	eulaProps, err := properties.LoadFile("eula.txt", properties.UTF8)
 	if err != nil {
-		return config, err
+		return configLater, err
 	}
 	eulaValue, hasEula := eulaProps.Get("eula")
 	if !hasEula || eulaValue != "true" {
 		_, ok, err := eulaProps.Set("eula", "true")
 		if err != nil {
-			return config, err
+			return configLater, err
 		}
 		if !ok {
 			panic("unable to set key")
@@ -128,11 +118,11 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 
 		renderedEula := eulaProps.String()
 		if err := os.WriteFile("eula.txt", []byte(renderedEula), 0700); err != nil {
-			return config, err
+			return configLater, err
 		}
 	}
 
-	return config, nil
+	return configLater, nil
 }
 
 func RunProgram(initCtx context.Context, opts *serverOpts) error {
