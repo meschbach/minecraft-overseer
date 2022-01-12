@@ -2,3 +2,4 @@
 /minecraft-overseer
 test/data
 /overseer-server
+deployment/*.yaml
