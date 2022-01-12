@@ -1,11 +1,14 @@
-FROM golang:1.17 as builder
+FROM --platform=$TARGETPLATFORM golang:1.17 as builder
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETARCH
+RUN uname -a
+RUN echo $BUILDPLATFORM $TARGETPLATFORM
 WORKDIR /app
 COPY . .
-RUN go build -o overseer ./cmd/server
-# The following helps diagnose computer architecutre issues (IE: compile for ARM64/M1 v AMD64)
-RUN ./overseer --help
+RUN GOARCH=$TARGETARCH go build -o overseer ./cmd/server
 
-FROM openjdk
+FROM --platform=$TARGETPLATFORM openjdk
 COPY --from=builder /app/overseer /overseer
 COPY log4j.xml /log4j.xml
 CMD ["/overseer", "run"]
