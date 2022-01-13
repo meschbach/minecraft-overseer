@@ -11,6 +11,7 @@ import (
 
 type runtimeConfig struct {
 	operators []string
+	users     []string
 }
 
 func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConfig, error) {
@@ -29,6 +30,7 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 	}
 
 	configLater.operators = manifest.V2.DefaultOps
+	configLater.users = manifest.V2.Allowed
 
 	switch manifest.V2.Type {
 	case "vanilla":

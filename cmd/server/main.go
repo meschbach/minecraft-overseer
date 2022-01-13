@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/meschbach/go-junk-bucket/sub"
 	"github.com/meschbach/minecraft-overseer/internal/junk"
+	"github.com/meschbach/minecraft-overseer/internal/mc"
 	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 	"github.com/spf13/cobra"
 	"os"
@@ -53,21 +54,7 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 
 	//standard output
 	go stdout.RunLoop()
-	gameChannel := make(chan events.LogEntry)
-	go func() {
-		fmt.Println("<<stdout interpreter started>>")
-		for msg := range gameEventsInput {
-			entry := events.ParseLogEntry(msg)
-			switch entry.(type) {
-			case *events.UnknownLogEntry:
-				//ignore for now, dumped on stdout anyway
-			default:
-				fmt.Printf("<<game>> %#v\n", entry)
-				gameChannel <- entry
-			}
-		}
-		fmt.Println("<<stdout interpreter done>>")
-	}()
+
 	go func() {
 		fmt.Println("<<stdout initialized>>")
 		for msg := range echoStdoutChannel {
@@ -75,18 +62,15 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 		}
 	}()
 
+	reactor := mc.StartReactor(gameEventsInput, stdin)
+	reactor.PendingOperations <- &mc.WaitForStart{}
+	reactor.PendingOperations <- &mc.EnsureUserOperators{Users: runtimeConfig.operators}
+	reactor.PendingOperations <- &mc.EnsureWhitelistAdd{Users: runtimeConfig.users}
+
+	gameChannel := make(chan events.LogEntry, 16)
+	completedGamesChannel := reactor.Logs.Add(gameChannel)
 	go func() {
-		for entry := range gameChannel {
-			if _, ok := entry.(*events.StartedEntry); ok {
-				break
-			}
-		}
-
-		for _, operator := range runtimeConfig.operators {
-			stdin <- fmt.Sprintf("whitelist add %s", operator)
-			stdin <- fmt.Sprintf("op %s", operator)
-		}
-
+		defer completedGamesChannel()
 		for entry := range gameChannel {
 			switch e := entry.(type) {
 			case *events.UserJoinedEntry:

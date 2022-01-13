@@ -10,6 +10,7 @@ type ManifestV2 struct {
 	Version    string
 	ServerURL  string   `json:"server-url"`
 	DefaultOps []string `json:"default-operators"`
+	Allowed    []string `json:"allowed-users"`
 }
 
 type ManifestV1 struct {
