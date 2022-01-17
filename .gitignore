@@ -1,5 +1,6 @@
 .idea/
 /minecraft-overseer
-test/data
+/test/data
+/test/secrets
 /overseer-server
 deployment/*.yaml

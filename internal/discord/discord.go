@@ -1,31 +1,29 @@
 package discord
 
 import (
-	"context"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 )
 
-type DiscordOutput struct {
-	client *discordgo.Session
-	//internal reactor stuff
-	ready bool
+type EventLogger struct {
+	//IPC layer to Discord
+	client     *discordgo.Session
+	eventQueue chan events.LogEntry
 }
 
-func NewDiscordClient(ctx context.Context, token string) (*DiscordOutput, error) {
+func NewLogger(token string, targetChannel string) (*EventLogger, error) {
 	client, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
 	}
 
-	subsystem := &DiscordOutput{
-		client: client,
-		ready:  false,
+	subsystem := &EventLogger{
+		client:     client,
+		eventQueue: make(chan events.LogEntry, 16),
 	}
 	client.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
 		fmt.Println("Discord client ready")
-		subsystem.ready = true
 		for _, guild := range s.State.Guilds {
 			fmt.Printf("\tGuild %q\n", guild.Name)
 			channels, _ := s.GuildChannels(guild.ID)
@@ -36,12 +34,21 @@ func NewDiscordClient(ctx context.Context, token string) (*DiscordOutput, error)
 				}
 				fmt.Printf("\t\tChannel %q\n", c.Name)
 
-				//if c.Name == "minecraft-talk-and-chat" {
-				//	s.ChannelMessageSend(
-				//		c.ID,
-				//		fmt.Sprintf("This is a test.  This is only a test.  Otherwise this would be giving info about the minecrat server."),
-				//	)
-				//}
+				if c.Name == targetChannel {
+					s.ChannelMessageSend(
+						c.ID,
+						fmt.Sprintf("Overseer connected."),
+					)
+					go func() {
+						for event := range subsystem.eventQueue {
+							switch event.(type) {
+							case *events.UnknownLogEntry:
+							default:
+								s.ChannelMessageSend(c.ID, event.String())
+							}
+						}
+					}()
+				}
 			}
 		}
 	})
@@ -51,6 +58,6 @@ func NewDiscordClient(ctx context.Context, token string) (*DiscordOutput, error)
 	return subsystem, nil
 }
 
-func (d *DiscordOutput) OnEvent(e events.LogEntry) {
-
+func (e *EventLogger) Ingest(dispatcher *events.LogDispatcher) {
+	dispatcher.Add(e.eventQueue)
 }

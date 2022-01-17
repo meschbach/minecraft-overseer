@@ -1,16 +1,16 @@
 package config
 
 import (
-	"encoding/json"
-	"os"
+	"github.com/meschbach/minecraft-overseer/internal/junk"
 )
 
 type ManifestV2 struct {
-	Type       string
-	Version    string
-	ServerURL  string   `json:"server-url"`
-	DefaultOps []string `json:"default-operators"`
-	Allowed    []string `json:"allowed-users"`
+	Type        string
+	Version     string
+	ServerURL   string                `json:"server-url"`
+	DefaultOps  []string              `json:"default-operators"`
+	Allowed     []string              `json:"allowed-users"`
+	DiscordList []DiscordManifestSpec `json:"discord"`
 }
 
 type ManifestV1 struct {
@@ -25,13 +25,5 @@ type Manifest struct {
 }
 
 func ParseManifest(manifest *Manifest, fileName string) error {
-	bytes, err := os.ReadFile(fileName)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(bytes, manifest); err != nil {
-		return err
-	}
-	return nil
+	return junk.ParseJSONFile(fileName, manifest)
 }

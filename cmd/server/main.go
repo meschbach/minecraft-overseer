@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/meschbach/go-junk-bucket/sub"
+	"github.com/meschbach/minecraft-overseer/internal/discord"
 	"github.com/meschbach/minecraft-overseer/internal/junk"
 	"github.com/meschbach/minecraft-overseer/internal/mc"
 	"github.com/meschbach/minecraft-overseer/internal/mc/events"
@@ -81,6 +82,14 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 			}
 		}
 	}()
+
+	for _, discordSpec := range runtimeConfig.discord {
+		logger, err := discord.NewLogger(discordSpec.token, "dev-minecraft-overseer")
+		if err != nil {
+			return err
+		}
+		go logger.Ingest(reactor.Logs)
+	}
 
 	err = cmd.Interact(stdin, stdoutChannel, stderr)
 	if err != nil {
