@@ -5,15 +5,61 @@ import (
 	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 )
 
-type ConsoleOperationFunc = func(logEntry <-chan events.LogEntry, stdin chan<- string)
+type ConsoleOperationFunc = func(buffer LogEntryBuffer, stdin chan<- string)
+
+type LogEntryBuffer interface {
+	WaitFor(func(entry events.LogEntry) bool)
+}
 
 type ConsoleOperation interface {
-	Apply(logEntry <-chan events.LogEntry, stdin chan<- string)
+	Apply(buffer LogEntryBuffer, stdin chan<- string)
 }
 
 type ConsoleReactor struct {
 	Logs              *events.LogDispatcher
 	PendingOperations chan ConsoleOperation
+}
+
+func (c *ConsoleReactor) consumeOperations(stdin chan<- string) {
+	for op := range c.PendingOperations {
+		c.consumeOperation(op, stdin)
+	}
+}
+
+func (c *ConsoleReactor) consumeOperation(op ConsoleOperation, stdin chan<- string) {
+	consumer := make(chan events.LogEntry, 32)
+	defer close(consumer)
+
+	done := c.Logs.Add("ConsoleReactorOperation", consumer)
+	defer done()
+
+	buffer := consoleEventBuffer{input: consumer}
+	op.Apply(&buffer, stdin)
+	buffer.drain()
+}
+
+type consoleEventBuffer struct {
+	input chan events.LogEntry
+}
+
+func (c *consoleEventBuffer) WaitFor(filter func(entry events.LogEntry) bool) {
+	fmt.Printf("Waiting on messages\n")
+	for e := range c.input {
+		if filter(e) {
+			fmt.Printf("Found\n")
+			return
+		}
+	}
+}
+
+func (c *consoleEventBuffer) drain() {
+	for {
+		select {
+		case <-c.input:
+		default:
+			return
+		}
+	}
 }
 
 func StartReactor(stdout <-chan string, stdin chan<- string) *ConsoleReactor {
@@ -25,19 +71,7 @@ func StartReactor(stdout <-chan string, stdin chan<- string) *ConsoleReactor {
 		Logs:              dispatcher,
 		PendingOperations: operations,
 	}
-
-	//Controlling actor
-	go func() {
-		consumer := make(chan events.LogEntry)
-		defer close(consumer)
-
-		done := dispatcher.Add("ConsoleReactor", consumer)
-		defer done()
-
-		for op := range operations {
-			op.Apply(consumer, stdin)
-		}
-	}()
+	go reactor.consumeOperations(stdin)
 
 	//Parser
 	go func() {
@@ -52,20 +86,23 @@ func StartReactor(stdout <-chan string, stdin chan<- string) *ConsoleReactor {
 
 type WaitForStart struct{}
 
-func (w *WaitForStart) Apply(logEntry <-chan events.LogEntry, stdin chan<- string) {
-	for e := range logEntry {
-		switch e.(type) {
+func (w *WaitForStart) Apply(buffer LogEntryBuffer, stdin chan<- string) {
+	buffer.WaitFor(func(entry events.LogEntry) bool {
+		switch entry.(type) {
 		case *events.StartedEntry:
-			return
+			return true
+		default:
+			return false
 		}
-	}
+	})
+	fmt.Printf("Game started.\n")
 }
 
 type EnsureUserOperators struct {
 	Users []string
 }
 
-func (w *EnsureUserOperators) Apply(logEntry <-chan events.LogEntry, stdin chan<- string) {
+func (w *EnsureUserOperators) Apply(buffer LogEntryBuffer, stdin chan<- string) {
 	for _, operator := range w.Users {
 		stdin <- fmt.Sprintf("whitelist add %s", operator)
 		stdin <- fmt.Sprintf("op %s", operator)
@@ -76,7 +113,7 @@ type EnsureWhitelistAdd struct {
 	Users []string
 }
 
-func (w *EnsureWhitelistAdd) Apply(logEntry <-chan events.LogEntry, stdin chan<- string) {
+func (w *EnsureWhitelistAdd) Apply(buffer LogEntryBuffer, stdin chan<- string) {
 	for _, operator := range w.Users {
 		stdin <- fmt.Sprintf("whitelist add %s", operator)
 	}
