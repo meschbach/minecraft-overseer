@@ -31,11 +31,10 @@ func StartReactor(stdout <-chan string, stdin chan<- string) *ConsoleReactor {
 		consumer := make(chan events.LogEntry)
 		defer close(consumer)
 
-		done := dispatcher.Add(consumer)
+		done := dispatcher.Add("ConsoleReactor", consumer)
 		defer done()
 
 		for op := range operations {
-			fmt.Printf("Next operation %#v\n", op)
 			op.Apply(consumer, stdin)
 		}
 	}()
@@ -57,7 +56,6 @@ func (w *WaitForStart) Apply(logEntry <-chan events.LogEntry, stdin chan<- strin
 	for e := range logEntry {
 		switch e.(type) {
 		case *events.StartedEntry:
-			fmt.Println("[Event] Game started")
 			return
 		}
 	}
@@ -68,7 +66,6 @@ type EnsureUserOperators struct {
 }
 
 func (w *EnsureUserOperators) Apply(logEntry <-chan events.LogEntry, stdin chan<- string) {
-	fmt.Printf("Ensuring users are oeprators")
 	for _, operator := range w.Users {
 		stdin <- fmt.Sprintf("whitelist add %s", operator)
 		stdin <- fmt.Sprintf("op %s", operator)
@@ -80,7 +77,6 @@ type EnsureWhitelistAdd struct {
 }
 
 func (w *EnsureWhitelistAdd) Apply(logEntry <-chan events.LogEntry, stdin chan<- string) {
-	fmt.Printf("Ensuring users are on the whitelist")
 	for _, operator := range w.Users {
 		stdin <- fmt.Sprintf("whitelist add %s", operator)
 	}

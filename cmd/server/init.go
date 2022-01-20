@@ -7,12 +7,14 @@ import (
 	"github.com/magiconair/properties"
 	"github.com/meschbach/minecraft-overseer/internal/config"
 	"os"
+	"path/filepath"
 )
 
 type runtimeConfig struct {
-	operators []string
-	users     []string
-	discord   []discordRuntimeConfig
+	gameDirectory string
+	operators     []string
+	users         []string
+	discord       []discordRuntimeConfig
 }
 
 type discordRuntimeConfig struct {
@@ -49,6 +51,13 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 	default:
 		return configLater, errors.New("only vanilla supported right now")
 	}
+
+	//resolve game directory
+	realGameDirectory, err := filepath.Abs(gameDir)
+	if err != nil {
+		return configLater, err
+	}
+	configLater.gameDirectory = realGameDirectory
 
 	// change to the game directory
 	if err := os.Chdir(gameDir); err != nil {

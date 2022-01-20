@@ -3,11 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/meschbach/go-junk-bucket/sub"
 	"github.com/meschbach/minecraft-overseer/internal/discord"
-	"github.com/meschbach/minecraft-overseer/internal/junk"
 	"github.com/meschbach/minecraft-overseer/internal/mc"
-	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -33,55 +30,19 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 	}
 	fmt.Printf("Passed configuration: %v\n", runtimeConfig)
 
-	stdoutChannel := make(chan string, 16)
-	echoStdoutChannel := make(chan string, 16)
-	gameEventsInput := make(chan string, 16)
-	stdout := &junk.StringBroadcast{
-		Input: stdoutChannel,
-		Out:   []chan<- string{echoStdoutChannel, gameEventsInput},
+	game, err := mc.NewInstance(runtimeConfig.gameDirectory)
+	if err != nil {
+		return err
 	}
-	stderr := make(chan string, 16)
-	stdin := make(chan string, 16)
-	cmd := sub.NewSubcommand("java", []string{
-		"-Dlog4j2.formatMsgNoLookups=true", "-Dlog4j.configurationFile=/log4j.xml",
-		"-jar", "minecraft_server.jar",
-		"--nogui"})
-	go func() {
-		fmt.Println("<<stderr initialized>>")
-		for msg := range stderr {
-			fmt.Fprintf(os.Stderr, "<<stderr>> %s\n", msg)
-		}
-	}()
+	instance, err := game.PrepareRunning()
+	if err != nil {
+		return err
+	}
 
-	//standard output
-	go stdout.RunLoop()
-
-	go func() {
-		fmt.Println("<<stdout initialized>>")
-		for msg := range echoStdoutChannel {
-			fmt.Printf("<<stdout>> %s\n", msg)
-		}
-	}()
-
-	reactor := mc.StartReactor(gameEventsInput, stdin)
+	reactor := instance.Reactor
 	reactor.PendingOperations <- &mc.WaitForStart{}
 	reactor.PendingOperations <- &mc.EnsureUserOperators{Users: runtimeConfig.operators}
 	reactor.PendingOperations <- &mc.EnsureWhitelistAdd{Users: runtimeConfig.users}
-
-	gameChannel := make(chan events.LogEntry, 16)
-	completedGamesChannel := reactor.Logs.Add(gameChannel)
-	go func() {
-		defer completedGamesChannel()
-		for entry := range gameChannel {
-			switch e := entry.(type) {
-			case *events.UserJoinedEntry:
-				fmt.Printf("User %q joined", e.User)
-			case *events.UserLeftEvent:
-				fmt.Printf("User %q left", e.User)
-			default:
-			}
-		}
-	}()
 
 	for _, discordSpec := range runtimeConfig.discord {
 		logger, err := discord.NewLogger(discordSpec.token, "dev-minecraft-overseer")
@@ -91,7 +52,7 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 		go logger.Ingest(reactor.Logs)
 	}
 
-	err = cmd.Interact(stdin, stdoutChannel, stderr)
+	err = instance.Run()
 	if err != nil {
 		return err
 	}

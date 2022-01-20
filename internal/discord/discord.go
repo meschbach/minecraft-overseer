@@ -25,29 +25,21 @@ func NewLogger(token string, targetChannel string) (*EventLogger, error) {
 	client.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
 		fmt.Println("Discord client ready")
 		for _, guild := range s.State.Guilds {
-			fmt.Printf("\tGuild %q\n", guild.Name)
+			//fmt.Printf("\tGuild %q\n", guild.Name)
 			channels, _ := s.GuildChannels(guild.ID)
 			for _, c := range channels {
 				// Check if channel is a guild text channel and not a voice or DM channel
 				if c.Type != discordgo.ChannelTypeGuildText {
 					continue
 				}
-				fmt.Printf("\t\tChannel %q\n", c.Name)
+				//fmt.Printf("\t\tChannel %q\n", c.Name)
 
 				if c.Name == targetChannel {
 					s.ChannelMessageSend(
 						c.ID,
 						fmt.Sprintf("Overseer connected."),
 					)
-					go func() {
-						for event := range subsystem.eventQueue {
-							switch event.(type) {
-							case *events.UnknownLogEntry:
-							default:
-								s.ChannelMessageSend(c.ID, event.String())
-							}
-						}
-					}()
+					go subsystem.pumpMessagesOut(s, c.ID)
 				}
 			}
 		}
@@ -58,6 +50,21 @@ func NewLogger(token string, targetChannel string) (*EventLogger, error) {
 	return subsystem, nil
 }
 
+func (e *EventLogger) pumpMessagesOut(s *discordgo.Session, channelID string) {
+	fmt.Printf("Discord Event Pump activated channel %s\n", channelID)
+	for event := range e.eventQueue {
+		switch event.(type) {
+		case *events.UnknownLogEntry:
+		default:
+			_, err := s.ChannelMessageSend(channelID, event.String())
+			if err != nil {
+				fmt.Printf("WWW Failed to send Discord message because %q", err.Error())
+			}
+		}
+	}
+	fmt.Println("Stopped discord event pump")
+}
+
 func (e *EventLogger) Ingest(dispatcher *events.LogDispatcher) {
-	dispatcher.Add(e.eventQueue)
+	dispatcher.Add("DiscordEventLogger", e.eventQueue)
 }
