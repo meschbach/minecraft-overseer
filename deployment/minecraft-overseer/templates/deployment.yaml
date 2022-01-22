@@ -52,6 +52,8 @@ spec:
               name: instance
             - mountPath: /mc/config
               name: config
+            - mountPath: /mc/secrets
+              name: mc-secrets
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -72,3 +74,6 @@ spec:
           {{- with .Values.instanceStorage }}
             {{- toYaml . | nindent 10 }}
           {{- end }}
+        - name: mc-secrets
+          secret:
+            secretName: {{.Values.secretsName}}
