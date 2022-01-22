@@ -6,13 +6,14 @@ import (
 )
 
 type ManifestV2 struct {
-	Type        string
-	Version     string
-	ServerURL   string                `json:"server-url"`
-	DefaultOps  []string              `json:"default-operators"`
-	Allowed     []string              `json:"allowed-users"`
-	DiscordList []DiscordManifestSpec `json:"discord"`
-	BackupSpec  *BackupSpecV1         `json:"backup,omitempty"`
+	Type         string
+	Version      string
+	ServerURL    string                `json:"server-url"`
+	DefaultOps   []string              `json:"default-operators"`
+	Allowed      []string              `json:"allowed-users"`
+	DiscordList  []DiscordManifestSpec `json:"discord"`
+	BackupSpec   *BackupSpecV1         `json:"backup,omitempty"`
+	InstanceSpec *InstanceSpecV1       `json:"instance,omitempty"`
 }
 
 func (m *ManifestV2) interpret(config *RuntimeConfig) error {

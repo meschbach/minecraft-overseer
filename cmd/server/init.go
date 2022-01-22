@@ -99,6 +99,13 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 		if err := serverProperties.SetValue("spawn-protection", "1"); err != nil {
 			return err
 		}
+		if manifest.V2.InstanceSpec != nil {
+			if len(manifest.V2.InstanceSpec.Seed) > 0 {
+				if err := serverProperties.SetValue("level-seed", manifest.V2.InstanceSpec.Seed); err != nil {
+					return err
+				}
+			}
+		}
 		if err := os.WriteFile("server.properties", []byte(serverProperties.String()), 0700); err != nil {
 			return err
 		}
