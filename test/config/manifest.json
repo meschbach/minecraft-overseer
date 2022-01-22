@@ -3,12 +3,24 @@
     "type": "vanilla",
     "version": "1.17",
     "server-url": "https://launcher.mojang.com/v1/objects/a16d67e5807f57fc4e550299cf20226194497dc2/server.jar",
-    "default-operators": ["drakgremlin"],
-    "allowed-users": ["SqueakyAntEater"],
+    "default-operators": [
+      "drakgremlin"
+    ],
+    "allowed-users": [
+      "SqueakyAntEater"
+    ],
     "discord": [
       {
-        "auth-file":  "/mc/secrets/discord/v1.json"
+        "auth-file": "/mc/secrets/discord/v1.json"
       }
-    ]
+    ],
+    "backup": {
+      "minio": {
+        "frequency": "10m",
+        "credentials-file": "/mc/secrets/minio/backup.json",
+        "bucket": "overseer-dev",
+        "key-prefix": "backup/"
+      }
+    }
   }
 }

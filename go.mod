@@ -7,5 +7,6 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/magiconair/properties v1.8.5
 	github.com/meschbach/go-junk-bucket v0.0.0-20220109043738-c3aadc0aea3d
+	github.com/minio/minio-go/v7 v7.0.21
 	github.com/spf13/cobra v1.3.0
 )

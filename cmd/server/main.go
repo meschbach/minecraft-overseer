@@ -39,6 +39,9 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 		return err
 	}
 
+	if err := runtimeConfig.crossOver.Start(initCtx, game); err != nil {
+		return err
+	}
 	reactor := instance.Reactor
 	reactor.PendingOperations <- &mc.WaitForStart{}
 	reactor.PendingOperations <- &mc.EnsureUserOperators{Users: runtimeConfig.operators}

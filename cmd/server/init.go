@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/magiconair/properties"
 	"github.com/meschbach/minecraft-overseer/internal/config"
+	"github.com/meschbach/minecraft-overseer/internal/mc"
 	"os"
 	"path/filepath"
 )
@@ -15,6 +16,8 @@ type runtimeConfig struct {
 	operators     []string
 	users         []string
 	discord       []discordRuntimeConfig
+	backup        mc.BackupTarget
+	crossOver     config.RuntimeConfig
 }
 
 type discordRuntimeConfig struct {
@@ -84,10 +87,18 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 		if err != nil {
 			return err
 		}
-		serverProperties.SetValue("sync-chunk-writes", "false")
-		serverProperties.SetValue("motd", "Minecraft Overseer provisioned world")
-		serverProperties.SetValue("white-list", "true")
-		serverProperties.SetValue("spawn-protection", "1")
+		if err := serverProperties.SetValue("sync-chunk-writes", "false"); err != nil {
+			return err
+		}
+		if err := serverProperties.SetValue("motd", "Minecraft Overseer provisioned world"); err != nil {
+			return err
+		}
+		if err := serverProperties.SetValue("white-list", "true"); err != nil {
+			return err
+		}
+		if err := serverProperties.SetValue("spawn-protection", "1"); err != nil {
+			return err
+		}
 		if err := os.WriteFile("server.properties", []byte(serverProperties.String()), 0700); err != nil {
 			return err
 		}
@@ -115,6 +126,10 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 		if err := os.WriteFile("eula.txt", []byte(renderedEula), 0700); err != nil {
 			return configLater, err
 		}
+	}
+
+	if err := manifest.Interpret(&configLater.crossOver); err != nil {
+		return configLater, err
 	}
 
 	return configLater, nil
