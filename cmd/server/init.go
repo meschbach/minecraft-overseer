@@ -87,6 +87,7 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 		if err != nil {
 			return err
 		}
+		//todo: these should probably be a map which is feed in through a loop
 		if err := serverProperties.SetValue("sync-chunk-writes", "false"); err != nil {
 			return err
 		}
