@@ -8,12 +8,12 @@ import (
 type ManifestV2 struct {
 	Type         string
 	Version      string
-	ServerURL    string                `json:"server-url"`
-	DefaultOps   []string              `json:"default-operators"`
-	Allowed      []string              `json:"allowed-users"`
-	DiscordList  []DiscordManifestSpec `json:"discord"`
-	BackupSpec   *BackupSpecV1         `json:"backup,omitempty"`
-	InstanceSpec *InstanceSpecV1       `json:"instance,omitempty"`
+	ServerURL    string          `json:"server-url"`
+	DefaultOps   []string        `json:"default-operators"`
+	Allowed      []string        `json:"allowed-users"`
+	DiscordList  []DiscordSpecV1 `json:"discord"`
+	BackupSpec   *BackupSpecV1   `json:"backup,omitempty"`
+	InstanceSpec *InstanceSpecV1 `json:"instance,omitempty"`
 }
 
 func (m *ManifestV2) interpret(config *RuntimeConfig) error {
@@ -25,6 +25,13 @@ func (m *ManifestV2) interpret(config *RuntimeConfig) error {
 		}
 		config.subsystems = append(config.subsystems, m.BackupSpec.Minio)
 	}
+
+	for _, discordConfig := range m.DiscordList {
+		if err := discordConfig.interpret(config); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

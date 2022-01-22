@@ -12,7 +12,7 @@ type EventLogger struct {
 	eventQueue chan events.LogEntry
 }
 
-func NewLogger(token string, targetChannel string) (*EventLogger, error) {
+func NewLogger(token string, guildName string, targetChannel string) (*EventLogger, error) {
 	client, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
@@ -23,18 +23,25 @@ func NewLogger(token string, targetChannel string) (*EventLogger, error) {
 		eventQueue: make(chan events.LogEntry, 16),
 	}
 	client.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
+		found := false
 		fmt.Println("Discord client ready")
 		for _, guild := range s.State.Guilds {
 			//fmt.Printf("\tGuild %q\n", guild.Name)
+			//TODO: this should be configurable based on grants
+			//if guild.Name != guildName {
+			//	continue
+			//}
+
 			channels, _ := s.GuildChannels(guild.ID)
 			for _, c := range channels {
 				// Check if channel is a guild text channel and not a voice or DM channel
 				if c.Type != discordgo.ChannelTypeGuildText {
 					continue
 				}
-				//fmt.Printf("\t\tChannel %q\n", c.Name)
+				fmt.Printf("\t\tChannel %q\n", c.Name)
 
 				if c.Name == targetChannel {
+					found = true
 					s.ChannelMessageSend(
 						c.ID,
 						fmt.Sprintf("Overseer connected."),
@@ -42,6 +49,9 @@ func NewLogger(token string, targetChannel string) (*EventLogger, error) {
 					go subsystem.pumpMessagesOut(s, c.ID)
 				}
 			}
+		}
+		if !found {
+			fmt.Printf("Warning: Could not find guild %q with channel %q\n", guildName, targetChannel)
 		}
 	})
 	if err := client.Open(); err != nil {

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/meschbach/minecraft-overseer/internal/discord"
 	"github.com/meschbach/minecraft-overseer/internal/mc"
 	"github.com/spf13/cobra"
 	"os"
@@ -47,12 +46,8 @@ func RunProgram(initCtx context.Context, opts *serverOpts) error {
 	reactor.PendingOperations <- &mc.EnsureUserOperators{Users: runtimeConfig.operators}
 	reactor.PendingOperations <- &mc.EnsureWhitelistAdd{Users: runtimeConfig.users}
 
-	for _, discordSpec := range runtimeConfig.discord {
-		logger, err := discord.NewLogger(discordSpec.token, "dev-minecraft-overseer")
-		if err != nil {
-			return err
-		}
-		go logger.Ingest(reactor.Logs)
+	if err := runtimeConfig.crossOver.OnGameStart(initCtx, instance); err != nil {
+		return err
 	}
 
 	err = instance.Run()

@@ -15,13 +15,8 @@ type runtimeConfig struct {
 	gameDirectory string
 	operators     []string
 	users         []string
-	discord       []discordRuntimeConfig
 	backup        mc.BackupTarget
 	crossOver     config.RuntimeConfig
-}
-
-type discordRuntimeConfig struct {
-	token string
 }
 
 func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConfig, error) {
@@ -41,13 +36,6 @@ func initV2(ctx context.Context, configFile string, gameDir string) (runtimeConf
 
 	configLater.operators = manifest.V2.DefaultOps
 	configLater.users = manifest.V2.Allowed
-	for _, discordConfig := range manifest.V2.DiscordList {
-		var manifest config.DiscordAuthSpec
-		if err := discordConfig.ParseAuthFile(&manifest); err != nil {
-			return configLater, err
-		}
-		configLater.discord = append(configLater.discord, discordRuntimeConfig{token: manifest.Token})
-	}
 
 	switch manifest.V2.Type {
 	case "vanilla":

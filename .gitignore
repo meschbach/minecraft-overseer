@@ -4,3 +4,4 @@
 /test/secrets
 /overseer-server
 deployment/*.yaml
+/deployment/test

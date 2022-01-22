@@ -75,6 +75,11 @@ func (m *BackupSpecV1) Start(overseer context.Context, game *mc.Instance) error 
 	return nil
 }
 
+//TODO 1: another example where this design may be wrong
+func (m *BackupSpecV1) OnGameStart(gameContext context.Context, game *mc.RunningGame) error {
+	return nil
+}
+
 type BackupCredentialsFileV1 struct {
 	UseTLS    bool   `json:"use-tls"`
 	KeyID     string `json:"access-key"`
