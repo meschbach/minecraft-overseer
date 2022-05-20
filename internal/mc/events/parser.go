@@ -52,5 +52,14 @@ func ParseLogEntry(rawEntry string) LogEntry {
 			User: name,
 		}
 	}
+	if strings.HasPrefix(message, "<") {
+		endUserName := strings.Index(message, ">")
+		name := message[1:endUserName]
+		remainder := message[endUserName+2:]
+		return &UserSaidEvent{
+			Speaker: name,
+			Message: remainder,
+		}
+	}
 	return &UnknownLogEntry{Line: message}
 }

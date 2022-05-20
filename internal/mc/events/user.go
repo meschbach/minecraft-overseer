@@ -25,3 +25,16 @@ func (s *UserLeftEvent) String() string {
 func (s *UserLeftEvent) IsOperations() bool {
 	return false
 }
+
+type UserSaidEvent struct {
+	Speaker string
+	Message string
+}
+
+func (s *UserSaidEvent) String() string {
+	return fmt.Sprintf("<%s> %s", s.Speaker, s.Message)
+}
+
+func (s *UserSaidEvent) IsOperations() bool {
+	return false
+}
