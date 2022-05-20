@@ -7,6 +7,8 @@ import (
 )
 
 func TestUserSaidEventParsing(t *testing.T) {
+	t.Parallel()
+
 	input := "[23:14:48] [Server thread/INFO]: <drakgremlin> why no sleep"
 	entry := ParseLogEntry(input)
 	require.IsType(t, &UserSaidEvent{}, entry)
@@ -16,6 +18,8 @@ func TestUserSaidEventParsing(t *testing.T) {
 }
 
 func TestUserSaidEventParsing_EmptyMessage(t *testing.T) {
+	t.Parallel()
+
 	input := "[23:14:48] [Server thread/INFO]: <drakgremlin> "
 	entry := ParseLogEntry(input)
 	require.IsType(t, &UserSaidEvent{}, entry)

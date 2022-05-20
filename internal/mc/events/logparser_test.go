@@ -5,6 +5,8 @@ import (
 )
 
 func TestLoadingMessageIgnored(t *testing.T) {
+	t.Parallel()
+
 	input := "[22:33:46] [Server thread/INFO]: Default game type: SURVIVAL"
 	entry := ParseLogEntry(input)
 	if entry.String() != "Default game type: SURVIVAL" {
@@ -13,6 +15,8 @@ func TestLoadingMessageIgnored(t *testing.T) {
 }
 
 func TestConsumesStartingMessage(t *testing.T) {
+	t.Parallel()
+
 	input := "[22:33:46] [Server thread/INFO]: Starting minecraft server version 1.12"
 	entry := ParseLogEntry(input)
 	startingEntry := entry.(*StartingEntry)
@@ -22,6 +26,8 @@ func TestConsumesStartingMessage(t *testing.T) {
 }
 
 func TestConsumeStartedMessage(t *testing.T) {
+	t.Parallel()
+
 	input := "[14:37:43] [Server thread/INFO]: Done (2.095s)! For help, type \"help\" or \"?\""
 	rawEntry := ParseLogEntry(input)
 	entry := rawEntry.(*StartedEntry)
@@ -31,6 +37,8 @@ func TestConsumeStartedMessage(t *testing.T) {
 }
 
 func TestConsumeStartedMessage_17_1(t *testing.T) {
+	t.Parallel()
+
 	input := "[05:43:55] [Server thread/INFO]: Done (7.682s)! For help, type \"help\""
 	rawEntry := ParseLogEntry(input)
 	entry := rawEntry.(*StartedEntry)
@@ -40,6 +48,8 @@ func TestConsumeStartedMessage_17_1(t *testing.T) {
 }
 
 func TestStoppingMessage(t *testing.T) {
+	t.Parallel()
+
 	input := "[14:58:12] [Server thread/INFO]: Stopping the server"
 	rawEntry := ParseLogEntry(input)
 	_, ok := rawEntry.(*StoppingEntry)
@@ -49,6 +59,8 @@ func TestStoppingMessage(t *testing.T) {
 }
 
 func TestUserJoined(t *testing.T) {
+	t.Parallel()
+
 	input := "[15:03:18] [Server thread/INFO]: drakgremlin joined the game"
 	rawEntry := ParseLogEntry(input)
 	entry := rawEntry.(*UserJoinedEntry)
@@ -58,6 +70,8 @@ func TestUserJoined(t *testing.T) {
 }
 
 func TestUserJoinedWithNewline(t *testing.T) {
+	t.Parallel()
+
 	input := "[15:03:18] [Server thread/INFO]: drakgremlin joined the game\n"
 	rawEntry := ParseLogEntry(input)
 	entry := rawEntry.(*UserJoinedEntry)
@@ -67,6 +81,8 @@ func TestUserJoinedWithNewline(t *testing.T) {
 }
 
 func TestUserLeft(t *testing.T) {
+	t.Parallel()
+
 	input := "[15:03:38] [Server thread/INFO]: drakgremlin left the game"
 	rawEntry := ParseLogEntry(input)
 	entry := rawEntry.(*UserLeftEvent)
