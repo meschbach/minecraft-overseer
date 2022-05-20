@@ -65,7 +65,10 @@ func ParseLogEntry(rawEntry string) LogEntry {
 	if strings.HasSuffix(message, "was killed by Witch using magic") {
 		return &GenericDeathMessage{Message: message}
 	}
-	if strings.HasSuffix(message, "was slain by Zombie") {
+	if strings.Contains(message, "was slain by ") {
+		return &GenericDeathMessage{Message: message}
+	}
+	if strings.HasSuffix(message, "was shot by Skeleton") {
 		return &GenericDeathMessage{Message: message}
 	}
 	return &UnknownLogEntry{Line: message}
