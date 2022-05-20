@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"github.com/meschbach/minecraft-overseer/internal/junk"
+	junk "github.com/meschbach/go-junk-bucket/pkg/files"
 )
 
 type ManifestV2 struct {

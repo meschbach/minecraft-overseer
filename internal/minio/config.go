@@ -3,7 +3,7 @@ package minio
 import (
 	"context"
 	"fmt"
-	"github.com/meschbach/minecraft-overseer/internal/junk"
+	junk "github.com/meschbach/go-junk-bucket/pkg/files"
 	"github.com/meschbach/minecraft-overseer/internal/mc"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"

@@ -3,8 +3,8 @@ package config
 import (
 	"context"
 	"errors"
+	junk "github.com/meschbach/go-junk-bucket/pkg/files"
 	"github.com/meschbach/minecraft-overseer/internal/discord"
-	"github.com/meschbach/minecraft-overseer/internal/junk"
 	"github.com/meschbach/minecraft-overseer/internal/mc"
 )
 
