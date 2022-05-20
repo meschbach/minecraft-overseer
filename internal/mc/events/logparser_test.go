@@ -30,7 +30,7 @@ func TestConsumeStartedMessage(t *testing.T) {
 	}
 }
 
-func TestConsumeStartedMessage171(t *testing.T) {
+func TestConsumeStartedMessage_17_1(t *testing.T) {
 	input := "[05:43:55] [Server thread/INFO]: Done (7.682s)! For help, type \"help\""
 	rawEntry := ParseLogEntry(input)
 	entry := rawEntry.(*StartedEntry)
