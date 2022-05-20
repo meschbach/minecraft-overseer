@@ -14,32 +14,36 @@ type connection struct {
 func (c *connection) onReadyEvent(s *discordgo.Session, event *discordgo.Ready) {
 	found := false
 	fmt.Println("Discord client ready")
-	for _, guild := range s.State.Guilds {
-		//fmt.Printf("\tGuild %q\n", guild.Name)
-		//TODO: this should be configurable based on grants
-		//if guild.Name != guildName {
-		//	continue
-		//}
+	//TODO: Viewing Guild names require additional permissions
+	if len(s.State.Guilds) != 1 {
+		fmt.Printf("Warning: Has %d guilds.  Assuming each guild in list is %q\n", len(s.State.Guilds), c.guildName)
+	}
 
-		channels, _ := s.GuildChannels(guild.ID)
+	for _, guild := range s.State.Guilds {
+		//TODO: Filters on guilds should probably be a tunable
+
+		channels, err := s.GuildChannels(guild.ID)
+		if err != nil {
+			fmt.Printf("Error when attempting to list Guild %q channels: %s", guild.ID, err.Error())
+			continue
+		}
 		for _, channel := range channels {
 			// Check if channel is a guild text channel and not a voice or DM channel
 			if channel.Type != discordgo.ChannelTypeGuildText {
 				continue
 			}
-			fmt.Printf("\t\tChannel %q\n", channel.Name)
 
 			if channel.Name == c.targetChannel {
 				found = true
-				s.ChannelMessageSend(
-					channel.ID,
-					fmt.Sprintf("Overseer connected."),
-				)
-				go c.subsystem.pumpMessagesOut(s, channel.ID)
+				c.onChannelFound(s, channel.ID)
 			}
 		}
 	}
 	if !found {
 		fmt.Printf("Warning: Could not find guild %q with channel %q\n", c.guildName, c.targetChannel)
 	}
+}
+
+func (c *connection) onChannelFound(s *discordgo.Session, channelID string) {
+	go c.subsystem.pumpMessagesOut(s, channelID)
 }

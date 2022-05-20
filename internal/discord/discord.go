@@ -5,8 +5,14 @@ import (
 	"github.com/meschbach/minecraft-overseer/internal/mc/events"
 )
 
-func NewLogger(token string, guildName string, targetChannel string) (*EventLogger, error) {
-	client, err := discordgo.New("Bot " + token)
+type Config struct {
+	Token         string
+	GuildName     string
+	TargetChannel string
+}
+
+func NewLogger(config Config) (*EventLogger, error) {
+	client, err := discordgo.New("Bot " + config.Token)
 	if err != nil {
 		return nil, err
 	}
@@ -16,8 +22,8 @@ func NewLogger(token string, guildName string, targetChannel string) (*EventLogg
 		eventQueue: make(chan events.LogEntry, 16),
 	}
 	connectionHandler := &connection{
-		guildName:     guildName,
-		targetChannel: targetChannel,
+		guildName:     config.GuildName,
+		targetChannel: config.TargetChannel,
 		subsystem:     subsystem,
 	}
 	client.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {

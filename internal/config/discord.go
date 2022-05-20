@@ -57,7 +57,11 @@ func (d *discordLogger) Start(systemContext context.Context, instance *mc.Instan
 }
 
 func (d *discordLogger) OnGameStart(systemContext context.Context, game *mc.RunningGame) error {
-	logger, err := discord.NewLogger(d.token, d.guild, d.channel)
+	logger, err := discord.NewLogger(discord.Config{
+		Token:         d.token,
+		GuildName:     d.guild,
+		TargetChannel: d.channel,
+	})
 	if err != nil {
 		return err
 	}
