@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	Token         string
-	GuildName     string
-	TargetChannel string
+	Token       string
+	GuildName   string
+	UserChannel string
+	OpChannel   string
 }
 
 func NewLogger(config Config) (*EventLogger, error) {
@@ -22,9 +23,10 @@ func NewLogger(config Config) (*EventLogger, error) {
 		eventQueue: make(chan events.LogEntry, 16),
 	}
 	connectionHandler := &connection{
-		guildName:     config.GuildName,
-		targetChannel: config.TargetChannel,
-		subsystem:     subsystem,
+		guildName:   config.GuildName,
+		userChannel: config.UserChannel,
+		opChannel:   config.OpChannel,
+		subsystem:   subsystem,
 	}
 	client.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
 		connectionHandler.onReadyEvent(s, event)

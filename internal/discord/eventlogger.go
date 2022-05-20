@@ -12,9 +12,12 @@ type EventLogger struct {
 	eventQueue chan events.LogEntry
 }
 
-func (e *EventLogger) pumpMessagesOut(s *discordgo.Session, channelID string) {
+func (e *EventLogger) pumpMessagesOut(s *discordgo.Session, channelID string, filter func(entry events.LogEntry) bool) {
 	fmt.Printf("Discord Event Pump activated channel %s\n", channelID)
 	for event := range e.eventQueue {
+		if !filter(event) {
+			continue
+		}
 		switch event.(type) {
 		case *events.UnknownLogEntry:
 		default:

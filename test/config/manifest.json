@@ -16,7 +16,8 @@
       {
         "auth-file": "/mc/secrets/discord/v1.json",
         "guild": "MEschbach",
-        "channel": "dev-minecraft-overseer"
+        "channel": "dev-minecraft-overseer",
+        "ops-channel": "dev-minecraft-overseer-ops"
       }
     ],
     "backup": {

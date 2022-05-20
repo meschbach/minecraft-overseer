@@ -15,6 +15,7 @@ type DiscordSpecV1 struct {
 	AuthSpecFile string `json:"auth-file,omitempty"`
 	Guild        string `json:"guild"`
 	Channel      string `json:"channel"`
+	OpsChannel   string `json:"ops-channel"`
 }
 
 func (d *DiscordSpecV1) interpret(config *RuntimeConfig) error {
@@ -24,15 +25,19 @@ func (d *DiscordSpecV1) interpret(config *RuntimeConfig) error {
 	if d.Channel == "" {
 		return errors.New("channel is empty")
 	}
+	if len(d.OpsChannel) == 0 {
+		d.OpsChannel = d.Channel
+	}
 
 	var manifest DiscordAuthSpecV1
 	if err := junk.ParseJSONFile(d.AuthSpecFile, &manifest); err != nil {
 		return err
 	}
 	config.subsystems = append(config.subsystems, &discordLogger{
-		token:   manifest.Token,
-		guild:   d.Guild,
-		channel: d.Channel,
+		token:      manifest.Token,
+		guild:      d.Guild,
+		channel:    d.Channel,
+		opsChannel: d.OpsChannel,
 	})
 	return nil
 }
@@ -46,9 +51,10 @@ type DiscordAuthSpecV1 struct {
 }
 
 type discordLogger struct {
-	token   string
-	guild   string
-	channel string
+	token      string
+	guild      string
+	channel    string
+	opsChannel string
 }
 
 //TODO 1: this is not needed, driving point for probably wrong abstraction
@@ -58,9 +64,10 @@ func (d *discordLogger) Start(systemContext context.Context, instance *mc.Instan
 
 func (d *discordLogger) OnGameStart(systemContext context.Context, game *mc.RunningGame) error {
 	logger, err := discord.NewLogger(discord.Config{
-		Token:         d.token,
-		GuildName:     d.guild,
-		TargetChannel: d.channel,
+		Token:       d.token,
+		GuildName:   d.guild,
+		UserChannel: d.channel,
+		OpChannel:   d.opsChannel,
 	})
 	if err != nil {
 		return err
