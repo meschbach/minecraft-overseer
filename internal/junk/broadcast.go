@@ -1,7 +1,7 @@
 package junk
 
-//StringBroadcast copies an input string from a single channel to multiple target channels.  Mutation is not suitable
-//in a multi-threaded context.
+// StringBroadcast copies an input string from a single channel to multiple target channels.  Mutation is not suitable
+// in a multi-threaded context.
 type StringBroadcast struct {
 	Input <-chan string
 	Out   []chan<- string

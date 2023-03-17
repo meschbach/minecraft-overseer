@@ -5,8 +5,8 @@ import (
 	"github.com/meschbach/minecraft-overseer/internal/mc"
 )
 
-//Subsystem is a plugin point
-//TODO 1: Re-evaluate if Start and OnGameStart make sense
+// Subsystem is a plugin point
+// TODO 1: Re-evaluate if Start and OnGameStart make sense
 type Subsystem interface {
 	Start(systemContext context.Context, instance *mc.Instance) error
 	OnGameStart(systemContext context.Context, game *mc.RunningGame) error

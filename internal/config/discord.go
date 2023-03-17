@@ -60,7 +60,7 @@ type discordLogger struct {
 	opsChannel string
 }
 
-//TODO 1: this is not needed, driving point for probably wrong abstraction
+// TODO 1: this is not needed, driving point for probably wrong abstraction
 func (d *discordLogger) Start(systemContext context.Context, instance *mc.Instance) error {
 	return nil
 }
