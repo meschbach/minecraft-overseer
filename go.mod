@@ -3,12 +3,13 @@ module github.com/meschbach/minecraft-overseer
 go 1.20
 
 require (
-	github.com/bwmarrin/discordgo v0.26.0
+	github.com/bwmarrin/discordgo v0.27.1
 	github.com/magiconair/properties v1.8.6
 	github.com/meschbach/go-junk-bucket v0.0.0-20230115061342-0c7bcf14cb01
 	github.com/minio/minio-go/v7 v7.0.21
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.0
+	github.com/thejerf/suture/v4 v4.0.2
 )
 
 require (
@@ -29,10 +30,10 @@ require (
 	github.com/rs/xid v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/crypto v0.0.0-20220518034528-6f7dac969898 // indirect
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -1,9 +1,11 @@
 package discord
 
 import (
+	"context"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/meschbach/minecraft-overseer/internal/mc/events"
+	"github.com/thejerf/suture/v4"
 )
 
 type connection struct {
@@ -13,11 +15,15 @@ type connection struct {
 	//opChannel receives operational messages like startup, connections, etc
 	opChannel string
 	subsystem *EventLogger
+	//userCommands will interpret a message from a client and respond as appropriate
+	userCommands     chan<- discordgo.Message
+	userReplies      <-chan string
+	ParentSupervisor *suture.Supervisor
 }
 
 func (c *connection) onReadyEvent(s *discordgo.Session, event *discordgo.Ready) {
 	found := 0
-	fmt.Println("Discord client ready")
+	fmt.Printf("Discord client ready, searching for {ops: %q, user: %q}\n", c.opChannel, c.userChannel)
 	//TODO: Viewing Guild names require additional permissions
 	if len(s.State.Guilds) != 1 {
 		fmt.Printf("Warning: Has %d guilds.  Assuming each guild in list is %q\n", len(s.State.Guilds), c.guildName)
@@ -62,10 +68,42 @@ func (c *connection) onUserChannelFound(s *discordgo.Session, channelID string) 
 	go c.subsystem.pumpMessagesOut(s, channelID, func(entry events.LogEntry) bool {
 		return !entry.IsOperations()
 	})
+	s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+		if m.ChannelID == channelID {
+			c.userCommands <- *m.Message
+		}
+	})
+
+	outgoingSupervisor := suture.NewSimple("outgoing")
+	outgoingSupervisor.Add(&outgoingDispatcher{s, channelID, c.userReplies})
+	c.ParentSupervisor.Add(outgoingSupervisor)
 }
 
 func (c *connection) onOpsChannelFound(s *discordgo.Session, channelID string) {
 	go c.subsystem.pumpMessagesOut(s, channelID, func(entry events.LogEntry) bool {
 		return entry.IsOperations()
 	})
+}
+
+type outgoingDispatcher struct {
+	s         *discordgo.Session
+	channelID string
+	queue     <-chan string
+}
+
+func (o *outgoingDispatcher) Serve(ctx context.Context) error {
+	for {
+		select {
+		case msg := <-o.queue:
+			_, err := o.s.ChannelMessageSend(o.channelID, msg, discordgo.WithContext(ctx))
+			if err != nil {
+				return err
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 }
