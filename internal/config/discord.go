@@ -19,6 +19,7 @@ type DiscordSpecV1 struct {
 	Guild        string `json:"guild"`
 	Channel      string `json:"channel"`
 	OpsChannel   string `json:"ops-channel"`
+	InstanceName string `json:"instance-name"`
 }
 
 func (d *DiscordSpecV1) interpret(config *RuntimeConfig) error {
@@ -32,10 +33,14 @@ func (d *DiscordSpecV1) interpret(config *RuntimeConfig) error {
 		d.OpsChannel = d.Channel
 	}
 
-	instanceName := "Minecraft "
-	if name, has := os.LookupEnv("INSTANCE_NAME"); has {
-		instanceName = name + " "
+	instanceName := d.InstanceName
+	if instanceName == "" {
+		instanceName = "Minecraft"
 	}
+	if name, has := os.LookupEnv("INSTANCE_NAME"); has {
+		instanceName = name
+	}
+	instanceName += " "
 
 	portSpec := ""
 	if value, has := os.LookupEnv("PORT_SPEC"); has {
