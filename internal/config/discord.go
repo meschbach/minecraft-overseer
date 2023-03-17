@@ -3,12 +3,12 @@ package config
 import (
 	"context"
 	"errors"
-	"github.com/bwmarrin/discordgo"
+	"fmt"
 	junk "github.com/meschbach/go-junk-bucket/pkg/files"
 	"github.com/meschbach/minecraft-overseer/internal/discord"
-	"github.com/meschbach/minecraft-overseer/internal/discord/commands"
 	"github.com/meschbach/minecraft-overseer/internal/mc"
 	"github.com/thejerf/suture/v4"
+	"os"
 )
 
 // DiscordSpecV1 is V1 of the discord configuration specification
@@ -32,15 +32,27 @@ func (d *DiscordSpecV1) interpret(config *RuntimeConfig) error {
 		d.OpsChannel = d.Channel
 	}
 
+	instanceName := "Minecraft "
+	if name, has := os.LookupEnv("INSTANCE_NAME"); has {
+		instanceName = name + " "
+	}
+
+	portSpec := ""
+	if value, has := os.LookupEnv("PORT_SPEC"); has {
+		portSpec = value
+	}
+
 	var manifest DiscordAuthSpecV1
 	if err := junk.ParseJSONFile(d.AuthSpecFile, &manifest); err != nil {
 		return err
 	}
 	config.subsystems = append(config.subsystems, &discordLogger{
-		token:      manifest.Token,
-		guild:      d.Guild,
-		channel:    d.Channel,
-		opsChannel: d.OpsChannel,
+		token:        manifest.Token,
+		guild:        d.Guild,
+		channel:      d.Channel,
+		opsChannel:   d.OpsChannel,
+		instanceName: instanceName,
+		portSpec:     portSpec,
 	})
 	return nil
 }
@@ -54,10 +66,12 @@ type DiscordAuthSpecV1 struct {
 }
 
 type discordLogger struct {
-	token      string
-	guild      string
-	channel    string
-	opsChannel string
+	token        string
+	guild        string
+	channel      string
+	opsChannel   string
+	instanceName string
+	portSpec     string
 }
 
 // TODO 1: this is not needed, driving point for probably wrong abstraction
@@ -66,28 +80,39 @@ func (d *discordLogger) Start(systemContext context.Context, instance *mc.Instan
 }
 
 func (d *discordLogger) OnGameStart(systemContext context.Context, game *mc.RunningGame) error {
-	userWireMessages := make(chan discordgo.Message, 128)
-	outgoingMessages := make(chan string, 128)
-
-	interpreter := commands.NewCommandSystem(commands.Config{}, userWireMessages, outgoingMessages)
-
 	actors := suture.NewSimple("discord")
-	actors.Add(interpreter)
-
-	logger, err := discord.NewLogger(discord.Config{
-		Token:            d.token,
-		GuildName:        d.guild,
-		UserChannel:      d.channel,
-		OpChannel:        d.opsChannel,
-		UserInterpreter:  userWireMessages,
-		Outgoing:         outgoingMessages,
-		ParentSupervisor: actors,
+	actors.Add(&startedNotice{})
+	discord.NewSystem(&discord.Runtime{
+		Parent:     actors,
+		Dispatcher: game.Reactor.Logs,
+	}, discord.SystemConfig{
+		InstanceName: d.instanceName,
+		Token:        d.token,
+		PortSpec:     d.portSpec,
+		Guild: discord.GuildConfig{
+			GuildName:   d.guild,
+			UserChannel: d.channel,
+			OpsChannel:  d.opsChannel,
+		},
 	})
-	if err != nil {
-		return err
-	}
-	go logger.Ingest(game.Reactor.Logs)
-	//todo: this really should be attached to a parent
-	actors.ServeBackground(systemContext)
+	go func() {
+		<-systemContext.Done()
+		fmt.Println("[discord] Game context closing.")
+	}()
+	go func() {
+		fmt.Printf("[discord] Starting.\n")
+		err := actors.Serve(systemContext)
+		if err != nil {
+			fmt.Printf("Discord errored: %s\n", err.Error())
+		}
+	}()
 	return nil
+}
+
+type startedNotice struct {
+}
+
+func (s *startedNotice) Serve(ctx context.Context) error {
+	fmt.Printf("[discord] Actor system started.\n")
+	return suture.ErrDoNotRestart
 }

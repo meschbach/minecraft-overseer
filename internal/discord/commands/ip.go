@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type ipReq struct {
@@ -33,6 +34,7 @@ func (i *ipCommand) Serve(ctx context.Context) error {
 func (i *ipCommand) consumeInput(ctx context.Context, r ipReq) error {
 	if i.cachedIP == "" {
 		if err := i.requestIP(ctx); err != nil {
+			fmt.Printf("[ip] failed to discover because %s\n", err.Error())
 			select {
 			case r.out <- "[ip] failed to discover because " + err.Error():
 			case <-ctx.Done():
@@ -52,7 +54,9 @@ func (i *ipCommand) consumeInput(ctx context.Context, r ipReq) error {
 }
 
 func (i *ipCommand) requestIP(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api64.ipify.org", nil)
+	expiringContext, done := context.WithTimeout(ctx, 1*time.Second)
+	defer done()
+	req, err := http.NewRequestWithContext(expiringContext, http.MethodGet, "https://api.ipify.org", nil)
 	if err != nil {
 		return err
 	}
