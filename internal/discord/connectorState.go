@@ -25,7 +25,7 @@ func (c *connectorState) onConnected(s *discordgo.Session) {
 	c.perform(func(ctx context.Context) error {
 		fmt.Printf("[discord] Connected %q (ready? %t)\n", s.State.SessionID, c.hasBeenReady)
 		if c.hasBeenReady {
-			if err := c.startConnectionHandlers(s); err != nil {
+			if err := c.startConnectionHandlers(s, false); err != nil {
 				return err
 			}
 		}
@@ -44,7 +44,7 @@ func (c *connectorState) onReady(s *discordgo.Session) {
 	c.perform(func(ctx context.Context) error {
 		if !c.hasBeenReady {
 			c.hasBeenReady = true
-			if err := c.startConnectionHandlers(s); err != nil {
+			if err := c.startConnectionHandlers(s, true); err != nil {
 				return err
 			}
 		}
@@ -52,13 +52,13 @@ func (c *connectorState) onReady(s *discordgo.Session) {
 	})
 }
 
-func (c *connectorState) startConnectionHandlers(s *discordgo.Session) error {
+func (c *connectorState) startConnectionHandlers(s *discordgo.Session, initial bool) error {
 	if err := c.shutdownConnection(); err != nil {
 		return err
 	}
 	sessionTree := suture.NewSimple("connection-" + s.State.SessionID)
 	factory := suture.NewSimple("factory")
-	factory.Add(c.config.connectionFactory(sessionTree, s))
+	factory.Add(c.config.connectionFactory(sessionTree, s, initial))
 	sessionTree.Add(factory)
 
 	newToken := c.config.connectionsTree.Add(sessionTree)

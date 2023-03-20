@@ -18,6 +18,8 @@ type onConnection struct {
 	userReplies  <-chan string
 	opChannel    string
 	instanceName string
+
+	firstConnection bool
 }
 
 func (o *onConnection) Serve(ctx context.Context) error {
@@ -62,8 +64,11 @@ func (o *onConnection) Serve(ctx context.Context) error {
 	if found < 2 {
 		fmt.Printf("[discord] Warning: Could not find guild %q with channel %q or %q\n", o.guildName, o.userChannel, o.opChannel)
 	} else {
-		if _, err := s.ChannelMessageSend(opsChannelID, "Overseer <-> Discord connection established."); err != nil {
-			fmt.Printf("[discord] Warning: Unable to send initial message because %s\n", err.Error())
+		if o.firstConnection {
+			msg := fmt.Sprintf("%s Overseer <-> Discord ready.", o.instanceName)
+			if _, err := s.ChannelMessageSend(opsChannelID, msg); err != nil {
+				fmt.Printf("[discord] Warning: Unable to send initial message because %s\n", err.Error())
+			}
 		}
 	}
 	return suture.ErrDoNotRestart

@@ -10,7 +10,7 @@ import (
 type connector struct {
 	token             string
 	connectionsTree   *suture.Supervisor
-	connectionFactory func(parent *suture.Supervisor, s *discordgo.Session) suture.Service
+	connectionFactory func(parent *suture.Supervisor, s *discordgo.Session, firstConnection bool) suture.Service
 }
 
 func (c *connector) Serve(ctx context.Context) error {

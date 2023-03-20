@@ -38,7 +38,7 @@ func NewSystem(rt *Runtime, spec SystemConfig) {
 	connectorSupervisor.Add(&connector{
 		token:           spec.Token,
 		connectionsTree: connections,
-		connectionFactory: func(parent *suture.Supervisor, s *discordgo.Session) suture.Service {
+		connectionFactory: func(parent *suture.Supervisor, s *discordgo.Session, firstConnection bool) suture.Service {
 			return &onConnection{
 				session:      s,
 				sessionTree:  parent,
@@ -48,6 +48,8 @@ func NewSystem(rt *Runtime, spec SystemConfig) {
 				userReplies:  userOutput,
 				opChannel:    spec.Guild.OpsChannel,
 				instanceName: spec.InstanceName,
+
+				firstConnection: firstConnection,
 			}
 		},
 	})
